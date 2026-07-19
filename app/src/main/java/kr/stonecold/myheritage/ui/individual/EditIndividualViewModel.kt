@@ -107,7 +107,9 @@ class EditIndividualViewModel(
                 )
 
                 val savedId = if (state.isNew) {
-                    repository.insertIndividual(entity)
+                    val allInds = repository.getAllIndividualsDirect()
+                    val targetKind = if (allInds.isEmpty()) -1 else state.kind
+                    repository.insertIndividual(entity.copy(kind = targetKind))
                 } else {
                     repository.updateIndividual(entity)
                     personId

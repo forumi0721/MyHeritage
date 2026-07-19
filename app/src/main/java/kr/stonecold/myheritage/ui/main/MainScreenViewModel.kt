@@ -25,8 +25,8 @@ class MainScreenViewModel(private val dataRepository: DataRepository) : ViewMode
                     dataRepository.getAllFamilies(),
                     dataRepository.getAllNonRepeatedFacts()
                 ) { individuals, families, facts ->
-                    // 루트 인물 (본인) ID 탐색: kind가 -1이거나 목록의 첫 번째 인물
-                    val rootInd = individuals.firstOrNull { it.kind == -1 } ?: individuals.firstOrNull()
+                    // 루트 인물 (본인) ID 탐색: kind가 -1인 인물을 먼저 찾고, 없으면 등록 순서가 가장 빠른(ID가 가장 작은) 인물 선택
+                    val rootInd = individuals.firstOrNull { it.kind == -1 } ?: individuals.minByOrNull { it.id }
                     val rootId = rootInd?.id ?: -1L
                     val myFamilyId = rootInd?.familyIdSpouse ?: -1L
 
