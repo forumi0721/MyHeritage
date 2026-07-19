@@ -96,6 +96,20 @@ class IndividualDetailViewModel(
         }
     }
 
+    fun setAsRoot(onSuccess: () -> Unit) {
+        val state = uiState.value
+        if (state is IndividualDetailUiState.Success) {
+            viewModelScope.launch {
+                val allIndividuals = repository.getAllIndividualsDirect()
+                allIndividuals.filter { it.kind == -1 }.forEach {
+                    repository.updateIndividual(it.copy(kind = 0))
+                }
+                repository.updateIndividual(state.individual.copy(kind = -1))
+                onSuccess()
+            }
+        }
+    }
+
     fun deleteIndividual(onSuccess: () -> Unit) {
         val state = uiState.value
         if (state is IndividualDetailUiState.Success) {

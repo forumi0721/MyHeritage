@@ -5,6 +5,7 @@ import android.widget.Toast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -105,7 +106,12 @@ fun IndividualDetailScreen(
                 is IndividualDetailUiState.Success -> {
                     DetailContent(
                         data = state as IndividualDetailUiState.Success,
-                        onItemClick = onItemClick
+                        onItemClick = onItemClick,
+                        onSetAsRoot = {
+                            viewModel.setAsRoot {
+                                Toast.makeText(context, "${(state as IndividualDetailUiState.Success).individual.name} 님이 가계도 기준(본인) 인물로 설정되었습니다.", Toast.LENGTH_SHORT).show()
+                            }
+                        }
                     )
                 }
                 is IndividualDetailUiState.Error -> {
@@ -121,7 +127,8 @@ fun IndividualDetailScreen(
 @Composable
 fun DetailContent(
     data: IndividualDetailUiState.Success,
-    onItemClick: (NavKey) -> Unit
+    onItemClick: (NavKey) -> Unit,
+    onSetAsRoot: () -> Unit
 ) {
     val person = data.individual
     val scrollState = rememberScrollState()
@@ -155,18 +162,47 @@ fun DetailContent(
                 )
                 Spacer(modifier = Modifier.width(16.dp))
                 Column {
-                    Text(
-                        text = person.name,
-                        fontSize = 22.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSecondaryContainer
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = person.name,
+                            fontSize = 22.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer
+                        )
+                        if (person.kind == -1) {
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Surface(
+                                color = MaterialTheme.colorScheme.primary,
+                                shape = RoundedCornerShape(4.dp),
+                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                            ) {
+                                Text(
+                                    text = "본인(기준)",
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onPrimary,
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                )
+                            }
+                        }
+                    }
                     if (!person.alias.isNullOrBlank()) {
                         Text(
                             text = "호칭: ${person.alias}",
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.8f)
                         )
+                    }
+                    if (person.kind != -1) {
+                        Spacer(modifier = Modifier.height(6.dp))
+                        OutlinedButton(
+                            onClick = onSetAsRoot,
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary),
+                            modifier = Modifier.height(32.dp),
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp)
+                        ) {
+                            Text("이 인물을 본인(기준)으로 설정", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        }
                     }
                 }
             }
