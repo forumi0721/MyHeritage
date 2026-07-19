@@ -166,8 +166,8 @@ open class BaseAnniversaryAppWidgetProvider(
                 }
             }
 
-            // [가상 제사 일정 후보 추가] (라벨이 "사망" 이면 기일 하루 전날로 계산하여 무조건 위젯에 후보로 추가)
-            if (fact.label?.trim() == "사망") {
+            // [가상 제사 일정 후보 추가] (라벨이 "사망" 이고 매년 반복 지정된 경우에만 기일 하루 전날로 계산하여 위젯에 후보로 추가)
+            if (fact.label?.trim() == "사망" && fact.isRepeated == 0) {
                 var jesaSolarCal = calculateSolarCal(thisYear, month, day, isLunar)
                 jesaSolarCal.add(Calendar.DAY_OF_MONTH, -1) // 하루 전 감산
                 

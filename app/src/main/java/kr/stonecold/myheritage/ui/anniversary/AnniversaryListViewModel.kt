@@ -89,8 +89,8 @@ class AnniversaryListViewModel(
             )
             resultList.add(mainItem)
             
-            // 2. 만약 구분 라벨이 "사망" 이면 "제사 (기일 하루 전)" 가상 일정 자동 산출 추가
-            if (fact.label?.trim() == "사망") {
+            // 2. 만약 구분 라벨이 "사망" 이고 매년 반복 지정된 경우에만 "제사 (기일 하루 전)" 가상 일정 자동 산출 추가
+            if (fact.label?.trim() == "사망" && fact.isRepeated == 0) {
                 // 원래 기일의 하루 전 계산
                 val prevOriginalDateStr = getPrevDateStr(dateVal)
                 
