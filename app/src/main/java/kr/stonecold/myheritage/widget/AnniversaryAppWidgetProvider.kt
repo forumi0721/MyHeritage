@@ -121,7 +121,9 @@ open class BaseAnniversaryAppWidgetProvider(
             val virtualLabel: String,
             val diffMillis: Long,
             val diffDays: Int,
-            val solarDateText: String
+            val solarDateText: String,
+            val originMonth: Int,
+            val originDay: Int
         )
 
         val candidates = mutableListOf<TempCandidate>()
@@ -160,7 +162,7 @@ open class BaseAnniversaryAppWidgetProvider(
                     val m = candidateSolarCal.get(Calendar.MONTH) + 1
                     val d = candidateSolarCal.get(Calendar.DAY_OF_MONTH)
                     val solarDateText = "${m}월 ${d}일"
-                    candidates.add(TempCandidate(fact, fact.label ?: "기념일", diffMillis, diffDays, solarDateText))
+                    candidates.add(TempCandidate(fact, fact.label ?: "기념일", diffMillis, diffDays, solarDateText, month, day))
                 }
             }
 
@@ -181,7 +183,7 @@ open class BaseAnniversaryAppWidgetProvider(
                     val jM = jesaSolarCal.get(Calendar.MONTH) + 1
                     val jD = jesaSolarCal.get(Calendar.DAY_OF_MONTH)
                     val jSolarDateText = "${jM}월 ${jD}일"
-                    candidates.add(TempCandidate(fact, "제사", jDiffMillis, jDiffDays, jSolarDateText))
+                    candidates.add(TempCandidate(fact, "제사", jDiffMillis, jDiffDays, jSolarDateText, month, day))
                 }
             }
         }
@@ -205,7 +207,18 @@ open class BaseAnniversaryAppWidgetProvider(
         val pPersonName = pPerson?.name ?: "가족"
         val pDdayStr = if (pCandidate.diffDays == 0) "D-Day" else "D-${pCandidate.diffDays}"
         val pTitleStr = "$pPersonName 님의 ${pCandidate.virtualLabel}"
-        val pDateStr = "올해 날짜: ${pCandidate.solarDateText}${if (pCandidate.fact.dateType == 1) " (음력)" else ""}"
+        
+        // 음력일 경우 원래 음력 월/일 정보 결합
+        val pDateStr = if (pCandidate.fact.dateType == 1) {
+            if (pCandidate.virtualLabel == "제사") {
+                "올해 양력: ${pCandidate.solarDateText} (기일: 음력 ${pCandidate.originMonth}/${pCandidate.originDay})"
+            } else {
+                "올해 양력: ${pCandidate.solarDateText} (음력 ${pCandidate.originMonth}/${pCandidate.originDay})"
+            }
+        } else {
+            "올해 날짜: ${pCandidate.solarDateText}"
+        }
+        
         val primary = WidgetAnniversary(pDdayStr, pTitleStr, pDateStr)
 
         // 2등 산출 (그 다음 기념일)
@@ -219,7 +232,18 @@ open class BaseAnniversaryAppWidgetProvider(
             val sPersonName = sPerson?.name ?: "가족"
             val sDdayStr = if (sCandidate.diffDays == 0) "D-Day" else "D-${sCandidate.diffDays}"
             val sTitleStr = "$sPersonName 님의 ${sCandidate.virtualLabel}"
-            val sDateStr = "${sCandidate.solarDateText}${if (sCandidate.fact.dateType == 1) " (음력)" else ""}"
+            
+            // 음력일 경우 원래 음력 월/일 정보 결합
+            val sDateStr = if (sCandidate.fact.dateType == 1) {
+                if (sCandidate.virtualLabel == "제사") {
+                    "${sCandidate.solarDateText} (기일: 음력 ${sCandidate.originMonth}/${sCandidate.originDay})"
+                } else {
+                    "${sCandidate.solarDateText} (음력 ${sCandidate.originMonth}/${sCandidate.originDay})"
+                }
+            } else {
+                sCandidate.solarDateText
+            }
+            
             secondary = WidgetAnniversary(sDdayStr, sTitleStr, sDateStr)
         }
 
