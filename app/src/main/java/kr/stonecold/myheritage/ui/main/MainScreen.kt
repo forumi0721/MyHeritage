@@ -9,8 +9,7 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -89,6 +88,8 @@ fun DashboardContent(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
+    var showAboutDialog by remember { mutableStateOf(false) }
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -112,13 +113,67 @@ fun DashboardContent(
                 Spacer(modifier = Modifier.height(12.dp))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceAround
+                    horizontalArrangement = Arrangement.SpaceAround,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     StatItem(label = "등록된 인물", count = data.totalIndividuals)
                     StatItem(label = "등록된 가족", count = data.totalFamilies)
                     StatItem(label = "등록된 기념일", count = data.totalAnniversaries)
+                    
+                    // About 앱 정보 클릭 아이템 추가
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier
+                            .clickable { showAboutDialog = true }
+                            .padding(horizontal = 8.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Info,
+                            contentDescription = "앱 정보",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(28.dp)
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "About",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.8f)
+                        )
+                    }
                 }
             }
+        }
+
+        // About 앱 정보 팝업 다이얼로그
+        if (showAboutDialog) {
+            AlertDialog(
+                onDismissRequest = { showAboutDialog = false },
+                title = { Text("My Heritages 정보", fontWeight = FontWeight.Bold) },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Text("앱 이름: My Heritages (가계도 및 기념일)", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                        Text("앱 버전: v1.2.0 (안드로이드 14+ 최적화)", fontSize = 13.sp)
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "주요 기능:\n• 가계도 트리 실시간 2D 줌/이동 뷰포트 탐색\n• 매년 반복 생일 및 기일 D-Day 음양력 변환 시스템\n• 4x1 라이트 및 다크 홈 화면 다가오는 일정 위젯\n• 다크/라이트 실시간 런타임 테마 설정 동기화",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "가족의 소중한 역사와 기억을 안전하고 영구적으로 보존하는 따뜻한 가방입니다.",
+                            style = MaterialTheme.typography.bodySmall,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = { showAboutDialog = false }) {
+                        Text("닫기")
+                    }
+                }
+            )
         }
 
         Text(
