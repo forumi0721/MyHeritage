@@ -16,7 +16,8 @@ data class AnniversaryUiItem(
     val thisYearSolarDateStr: String,
     val personName: String,
     val possessId: String,
-    val dateType: Int
+    val dateType: Int,
+    val isRepeated: Int
 )
 
 class AnniversaryListViewModel(
@@ -77,7 +78,8 @@ class AnniversaryListViewModel(
                 thisYearSolarDateStr = thisYearSolarDateStr,
                 personName = personName,
                 possessId = fact.possessId,
-                dateType = fact.dateType
+                dateType = fact.dateType,
+                isRepeated = fact.isRepeated
             )
         }
     }

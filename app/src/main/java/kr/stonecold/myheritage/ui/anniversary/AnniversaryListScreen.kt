@@ -82,17 +82,36 @@ fun AnniversaryListScreen(
                                         fontSize = 18.sp,
                                         color = MaterialTheme.colorScheme.primary
                                     )
-                                    Surface(
-                                        color = MaterialTheme.colorScheme.secondaryContainer,
-                                        shape = MaterialTheme.shapes.small
+                                    Row(
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                        verticalAlignment = Alignment.CenterVertically
                                     ) {
-                                        Text(
-                                            text = "대상자: ${fact.personName}",
-                                            style = MaterialTheme.typography.bodyMedium,
-                                            fontWeight = FontWeight.SemiBold,
-                                            color = MaterialTheme.colorScheme.onSecondaryContainer,
-                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                                        )
+                                        Surface(
+                                            color = MaterialTheme.colorScheme.secondaryContainer,
+                                            shape = MaterialTheme.shapes.small
+                                        ) {
+                                            Text(
+                                                text = "대상자: ${fact.personName}",
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                fontWeight = FontWeight.SemiBold,
+                                                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                            )
+                                        }
+                                        if (fact.isRepeated == 1) {
+                                            Surface(
+                                                color = MaterialTheme.colorScheme.primaryContainer,
+                                                shape = MaterialTheme.shapes.small
+                                            ) {
+                                                Text(
+                                                    text = "매년 반복",
+                                                    style = MaterialTheme.typography.bodySmall,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp)
+                                                )
+                                            }
+                                        }
                                     }
                                 }
                                 Spacer(modifier = Modifier.height(8.dp))
