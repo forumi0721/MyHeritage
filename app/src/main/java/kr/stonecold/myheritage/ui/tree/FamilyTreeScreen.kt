@@ -102,69 +102,136 @@ fun TreeContainer(
     val horizontalScrollState = rememberScrollState()
     val verticalScrollState = rememberScrollState()
 
-    // 2D 스크롤이 가능하도록 설계
+    // 최대 노드 수에 비례한 가로폭 계산으로 여백 최소화 및 가로 스크롤 범위 확보
+    val maxNodesInRow = maxOf(
+        if (data.father != null || data.mother != null) 2 else 0,
+        data.siblings.size + data.spouses.size + 1,
+        data.children.size
+    )
+    val computedWidth = maxOf(850.dp, (maxNodesInRow * 188).dp)
+
+    // 왼쪽 패딩을 대폭 축소하여 좌측 여백 차단 (32.dp -> 8.dp)
     Box(
         modifier = Modifier
             .fillMaxSize()
             .horizontalScroll(horizontalScrollState)
             .verticalScroll(verticalScrollState)
-            .padding(32.dp)
+            .padding(vertical = 24.dp, horizontal = 8.dp)
     ) {
-        // 백그라운드 연결선 그리기
-        // 노드들의 위치를 고려해 선을 그림
-        val lineColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
+        val lineColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f)
         
-        Canvas(modifier = Modifier.size(1000.dp, 800.dp)) {
-            // 1. 부모 -> 본인 연결선 (상층에서 중층)
-            // 부모 연합 노드가 X=500, Y=120 부근에 있고 본인 노드가 X=500, Y=300 부근에 있다고 가정
-            drawLine(
-                color = lineColor,
-                start = Offset(x = 500f, y = 140f),
-                end = Offset(x = 500f, y = 280f),
-                strokeWidth = 4f
-            )
-            // 2. 부모 -> 형제자매 연결선 (수평 가지선)
-            if (data.siblings.isNotEmpty()) {
-                drawLine(
-                    color = lineColor,
-                    start = Offset(x = 300f, y = 200f),
-                    end = Offset(x = 700f, y = 200f),
-                    strokeWidth = 4f
-                )
+        // Canvas 높이: 부모 세대 유무에 맞춰 최적화
+        val hasParent = (data.father != null || data.mother != null)
+        val canvasHeight = if (hasParent) 450.dp else 300.dp
+        
+        Canvas(modifier = Modifier.size(computedWidth, canvasHeight)) {
+            val xCenter = size.width / 2
+            
+            // Y축 물리적 좌표 상수 정의
+            val yParentMid = 40.dp.toPx()
+            val yParentBottom = 80.dp.toPx()
+            val ySelfTop = if (hasParent) 160.dp.toPx() else 40.dp.toPx()
+            val ySelfBottom = if (hasParent) 240.dp.toPx() else 120.dp.toPx()
+            val yChildTop = if (hasParent) 320.dp.toPx() else 200.dp.toPx()
+
+            // 1. 부모 -> 본인 수직 연결선
+            if (hasParent) {
+                if (data.father != null && data.mother != null) {
+                    val xFather = xCenter - 102.dp.toPx()
+                    val xMother = xCenter + 102.dp.toPx()
+                    // 부모 간 수평선
+                    drawLine(
+                        color = lineColor,
+                        start = Offset(xFather, yParentMid),
+                        end = Offset(xMother, yParentMid),
+                        strokeWidth = 5f
+                    )
+                    // 부모 중앙 교차점에서 본인 노드로 향하는 수직선
+                    drawLine(
+                        color = lineColor,
+                        start = Offset(xCenter, yParentMid),
+                        end = Offset(xCenter, ySelfTop),
+                        strokeWidth = 5f
+                    )
+                } else {
+                    // 한 부모만 존재하는 경우, 그 부모의 밑에서 바로 본인으로 수직선 연결
+                    drawLine(
+                        color = lineColor,
+                        start = Offset(xCenter, yParentBottom),
+                        end = Offset(xCenter, ySelfTop),
+                        strokeWidth = 5f
+                    )
+                }
             }
-            // 3. 본인 -> 자녀 연결선 (중층에서 하층)
+
+            // 2. 본인 -> 자녀 연결선 (계단식 꺾임 분기선 지원)
             if (data.children.isNotEmpty()) {
-                drawLine(
-                    color = lineColor,
-                    start = Offset(x = 500f, y = 380f),
-                    end = Offset(x = 500f, y = 520f),
-                    strokeWidth = 4f
-                )
+                val childCount = data.children.size
+                if (childCount == 1) {
+                    // 자녀가 1명일 때는 직통 수직선 연결
+                    drawLine(
+                        color = lineColor,
+                        start = Offset(xCenter, ySelfBottom),
+                        end = Offset(xCenter, yChildTop),
+                        strokeWidth = 5f
+                    )
+                } else {
+                    // 자녀가 2명 이상일 때는 수평 분기선 그리기
+                    val pitch = 140.dp.toPx() + 48.dp.toPx()
+                    val xFirstChild = xCenter - (childCount - 1) * pitch / 2
+                    val yHorizontal = (ySelfBottom + yChildTop) / 2
+                    
+                    // 본인 노드 바닥에서 수평선까지 수직 하강
+                    drawLine(
+                        color = lineColor,
+                        start = Offset(xCenter, ySelfBottom),
+                        end = Offset(xCenter, yHorizontal),
+                        strokeWidth = 5f
+                    )
+                    // 자녀들을 커버하는 가로 수평선
+                    drawLine(
+                        color = lineColor,
+                        start = Offset(xFirstChild, yHorizontal),
+                        end = Offset(xFirstChild + (childCount - 1) * pitch, yHorizontal),
+                        strokeWidth = 5f
+                    )
+                    // 수평 분기선에서 각 자녀 노드로 이어지는 수직선들
+                    for (i in 0 until childCount) {
+                        val xChild = xFirstChild + i * pitch
+                        drawLine(
+                            color = lineColor,
+                            start = Offset(xChild, yHorizontal),
+                            end = Offset(xChild, yChildTop),
+                            strokeWidth = 5f
+                        )
+                    }
+                }
             }
         }
 
+        // 실제 노드들을 담은 레이아웃
         Column(
-            modifier = Modifier.width(1000.dp),
+            modifier = Modifier.width(computedWidth),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(80.dp)
         ) {
-            // 1. 상층: 부모 세대
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(64.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                if (data.father != null) {
-                    TreeNode(person = data.father, label = "부 (아버지)", onClick = { onItemClick(IndividualDetail(data.father.id)) })
-                } else {
-                    PlaceholderNode("아버지 정보 없음")
-                }
+            // 1. 상층: 부모 세대 (부모가 최소 한 명이라도 있을 때만 노출하여 '정보 없음' 박스를 소멸)
+            if (hasParent) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(64.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    if (data.father != null) {
+                        TreeNode(person = data.father, label = "부 (아버지)", onClick = { onItemClick(IndividualDetail(data.father.id)) })
+                    }
 
-                Text("부부", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.outline)
+                    if (data.father != null && data.mother != null) {
+                        Text("부부", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                    }
 
-                if (data.mother != null) {
-                    TreeNode(person = data.mother, label = "모 (어머니)", onClick = { onItemClick(IndividualDetail(data.mother.id)) })
-                } else {
-                    PlaceholderNode("어머니 정보 없음")
+                    if (data.mother != null) {
+                        TreeNode(person = data.mother, label = "모 (어머니)", onClick = { onItemClick(IndividualDetail(data.mother.id)) })
+                    }
                 }
             }
 
@@ -201,14 +268,12 @@ fun TreeContainer(
                 }
             }
 
-            // 3. 하층: 자녀 세대
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(48.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                if (data.children.isEmpty()) {
-                    Text("등록된 자녀가 없습니다.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                } else {
+            // 3. 하층: 자녀 세대 (자녀가 있을 때만 노출)
+            if (data.children.isNotEmpty()) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(48.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     data.children.forEach { child ->
                         TreeNode(
                             person = child,
@@ -229,7 +294,7 @@ fun TreeNode(
     isRoot: Boolean = false,
     onClick: () -> Unit
 ) {
-    val genderColor = if (person.gender == 1) Color(0xFFC7E2F8) else Color(0xFFFCDDEC)
+    val genderColor = if (person.gender == 1) Color(0xFFE3F2FD) else Color(0xFFFCE4EC)
     val borderColor = if (isRoot) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
     val borderWidth = if (isRoot) 3.dp else 1.dp
 
@@ -267,25 +332,5 @@ fun TreeNode(
                 )
             }
         }
-    }
-}
-
-@Composable
-fun PlaceholderNode(text: String) {
-    Box(
-        modifier = Modifier
-            .width(140.dp)
-            .height(80.dp)
-            .background(MaterialTheme.colorScheme.surfaceVariant, shape = RoundedCornerShape(8.dp))
-            .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f), shape = RoundedCornerShape(8.dp))
-            .padding(8.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = text,
-            fontSize = 12.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center
-        )
     }
 }
