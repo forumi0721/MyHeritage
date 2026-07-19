@@ -229,8 +229,9 @@ fun EditForm(
                     }
                 )
                 data.individuals.forEach { person ->
+                    val aliasText = if (!person.alias.isNullOrBlank()) " (${person.alias})" else ""
                     DropdownMenuItem(
-                        text = { Text("${person.name} (${person.alias ?: "별칭 없음"})") },
+                        text = { Text("${person.name}$aliasText") },
                         onClick = {
                             relativeId = person.id
                             showRelativeMenu = false
