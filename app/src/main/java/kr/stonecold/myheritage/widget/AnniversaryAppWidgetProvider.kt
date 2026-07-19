@@ -108,7 +108,7 @@ class AnniversaryAppWidgetProvider : AppWidgetProvider() {
 
             val dateVal = fact.startDate
             val isLunar = fact.dateType == 1
-            val isRepeated = fact.isRepeated == 1
+            val isRepeated = fact.isRepeated == 0
 
             // 1. 원래 월/일 정보 획득
             val month: Int

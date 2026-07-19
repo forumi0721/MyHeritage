@@ -98,7 +98,7 @@ fun AnniversaryListScreen(
                                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                                             )
                                         }
-                                        if (fact.isRepeated == 1) {
+                                        if (fact.isRepeated == 0) {
                                             Surface(
                                                 color = MaterialTheme.colorScheme.primaryContainer,
                                                 shape = MaterialTheme.shapes.small
