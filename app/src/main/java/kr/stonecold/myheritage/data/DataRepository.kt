@@ -2,7 +2,9 @@ package kr.stonecold.myheritage.data
 
 import android.content.Context
 import android.net.Uri
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
@@ -124,7 +126,7 @@ class DefaultDataRepository(private val context: Context) : DataRepository {
     override suspend fun deleteResource(resource: ResourceEntity): Int = resourceDao.delete(resource)
 
     // Database Utilities
-    override suspend fun clearDatabase() {
+    override suspend fun clearDatabase() = withContext(Dispatchers.IO) {
         database.clearAllTables()
     }
 
