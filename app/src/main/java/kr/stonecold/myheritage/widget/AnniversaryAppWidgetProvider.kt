@@ -99,10 +99,10 @@ open class BaseAnniversaryAppWidgetProvider(
         facts: List<FactEntity>,
         indMap: Map<Long, IndividualEntity>
     ): WidgetResult {
-        // 1. 오직 '매년 반복(fact.isRepeated == 0)' 으로 체크된 기념일만 필터링
-        val repeatedFacts = facts.filter { fact -> fact.isRepeated == 0 }
+        // 반복일정(isRepeated == 0) 이거나 라벨이 "사망"인 것 수집
+        val targetFacts = facts.filter { fact -> fact.isRepeated == 0 || fact.label?.trim() == "사망" }
 
-        if (repeatedFacts.isEmpty()) {
+        if (targetFacts.isEmpty()) {
             return WidgetResult(
                 primary = WidgetAnniversary("D-일", "등록된 기념일이 없습니다.", "인물 상세에서 매년반복 일정을 추가하세요."),
                 secondary = null
@@ -118,6 +118,7 @@ open class BaseAnniversaryAppWidgetProvider(
 
         data class TempCandidate(
             val fact: FactEntity,
+            val virtualLabel: String,
             val diffMillis: Long,
             val diffDays: Int,
             val solarDateText: String
@@ -125,7 +126,7 @@ open class BaseAnniversaryAppWidgetProvider(
 
         val candidates = mutableListOf<TempCandidate>()
 
-        for (fact in repeatedFacts) {
+        for (fact in targetFacts) {
             val personId = if (fact.possessId.startsWith("IND_")) {
                 fact.possessId.substring(4).toLongOrNull() ?: -1L
             } else -1L
@@ -147,23 +148,42 @@ open class BaseAnniversaryAppWidgetProvider(
                 day = tempCal.get(Calendar.DAY_OF_MONTH)
             }
 
-            // 올해 기준 양력 후보일 구하기
-            var candidateSolarCal = calculateSolarCal(thisYear, month, day, isLunar)
-
-            // 만약 오늘보다 이전이면 내년 후보일로 이월 계산
-            if (candidateSolarCal.timeInMillis < todayCal.timeInMillis) {
-                candidateSolarCal = calculateSolarCal(thisYear + 1, month, day, isLunar)
+            // [사망 자체 일정 후보 추가] (매년 반복(isRepeated==0)으로 지정된 경우에만 노출)
+            if (fact.isRepeated == 0) {
+                var candidateSolarCal = calculateSolarCal(thisYear, month, day, isLunar)
+                if (candidateSolarCal.timeInMillis < todayCal.timeInMillis) {
+                    candidateSolarCal = calculateSolarCal(thisYear + 1, month, day, isLunar)
+                }
+                val diffMillis = candidateSolarCal.timeInMillis - todayCal.timeInMillis
+                if (diffMillis >= 0) {
+                    val diffDays = (diffMillis / (1000 * 60 * 60 * 24)).toInt()
+                    val m = candidateSolarCal.get(Calendar.MONTH) + 1
+                    val d = candidateSolarCal.get(Calendar.DAY_OF_MONTH)
+                    val solarDateText = "${m}월 ${d}일"
+                    candidates.add(TempCandidate(fact, fact.label ?: "기념일", diffMillis, diffDays, solarDateText))
+                }
             }
 
-            val diffMillis = candidateSolarCal.timeInMillis - todayCal.timeInMillis
-            if (diffMillis < 0) continue
+            // [가상 제사 일정 후보 추가] (라벨이 "사망" 이면 기일 하루 전날로 계산하여 무조건 위젯에 후보로 추가)
+            if (fact.label?.trim() == "사망") {
+                var jesaSolarCal = calculateSolarCal(thisYear, month, day, isLunar)
+                jesaSolarCal.add(Calendar.DAY_OF_MONTH, -1) // 하루 전 감산
+                
+                // 이미 지난 경우 내년 기일의 하루 전으로 이월 계산
+                if (jesaSolarCal.timeInMillis < todayCal.timeInMillis) {
+                    jesaSolarCal = calculateSolarCal(thisYear + 1, month, day, isLunar)
+                    jesaSolarCal.add(Calendar.DAY_OF_MONTH, -1)
+                }
 
-            val diffDays = (diffMillis / (1000 * 60 * 60 * 24)).toInt()
-            val m = candidateSolarCal.get(Calendar.MONTH) + 1
-            val d = candidateSolarCal.get(Calendar.DAY_OF_MONTH)
-            val solarDateText = "${m}월 ${d}일"
-
-            candidates.add(TempCandidate(fact, diffMillis, diffDays, solarDateText))
+                val jDiffMillis = jesaSolarCal.timeInMillis - todayCal.timeInMillis
+                if (jDiffMillis >= 0) {
+                    val jDiffDays = (jDiffMillis / (1000 * 60 * 60 * 24)).toInt()
+                    val jM = jesaSolarCal.get(Calendar.MONTH) + 1
+                    val jD = jesaSolarCal.get(Calendar.DAY_OF_MONTH)
+                    val jSolarDateText = "${jM}월 ${jD}일"
+                    candidates.add(TempCandidate(fact, "제사", jDiffMillis, jDiffDays, jSolarDateText))
+                }
+            }
         }
 
         if (candidates.isEmpty()) {
@@ -184,7 +204,7 @@ open class BaseAnniversaryAppWidgetProvider(
         val pPerson = indMap[pPersonId]
         val pPersonName = pPerson?.name ?: "가족"
         val pDdayStr = if (pCandidate.diffDays == 0) "D-Day" else "D-${pCandidate.diffDays}"
-        val pTitleStr = "$pPersonName 님의 ${pCandidate.fact.label ?: "기념일"}"
+        val pTitleStr = "$pPersonName 님의 ${pCandidate.virtualLabel}"
         val pDateStr = "올해 날짜: ${pCandidate.solarDateText}${if (pCandidate.fact.dateType == 1) " (음력)" else ""}"
         val primary = WidgetAnniversary(pDdayStr, pTitleStr, pDateStr)
 
@@ -198,7 +218,7 @@ open class BaseAnniversaryAppWidgetProvider(
             val sPerson = indMap[sPersonId]
             val sPersonName = sPerson?.name ?: "가족"
             val sDdayStr = if (sCandidate.diffDays == 0) "D-Day" else "D-${sCandidate.diffDays}"
-            val sTitleStr = "$sPersonName 님의 ${sCandidate.fact.label ?: "기념일"}"
+            val sTitleStr = "$sPersonName 님의 ${sCandidate.virtualLabel}"
             val sDateStr = "${sCandidate.solarDateText}${if (sCandidate.fact.dateType == 1) " (음력)" else ""}"
             secondary = WidgetAnniversary(sDdayStr, sTitleStr, sDateStr)
         }
