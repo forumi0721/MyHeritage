@@ -131,6 +131,9 @@ class DefaultDataRepository(private val context: Context) : DataRepository {
     }
 
     override fun backupDatabase(): Boolean {
+        // 백업 전 최신 트랜잭션 데이터를 물리 DB 파일에 완전 병합
+        triggerDbCheckpoint()
+
         val dbFile = context.getDatabasePath("myHeritage.db")
         if (!dbFile.exists()) return false
 
@@ -161,11 +164,23 @@ class DefaultDataRepository(private val context: Context) : DataRepository {
         val dbFile = context.getDatabasePath("myHeritage.db")
 
         return try {
-            database.close() // 데이터베이스를 닫아야 정상 덮어쓰기가 됨
+            // 1. 싱글톤 클로즈 및 해제
+            MyHeritageDatabase.resetDatabase()
+
+            // 2. 잔존하는 저널 파일(-wal, -shm) 물리 삭제
+            val walFile = File(dbFile.path + "-wal")
+            val shmFile = File(dbFile.path + "-shm")
+            if (walFile.exists()) walFile.delete()
+            if (shmFile.exists()) shmFile.delete()
             if (dbFile.exists()) {
                 dbFile.delete()
             }
+
+            // 3. 복사 덮어쓰기
             copyFile(backupFile, dbFile)
+
+            // 4. 새로운 데이터베이스 커넥션 기동
+            MyHeritageDatabase.getDatabase(context)
             true
         } catch (e: IOException) {
             e.printStackTrace()
@@ -174,6 +189,9 @@ class DefaultDataRepository(private val context: Context) : DataRepository {
     }
 
     override fun backupDatabaseToUri(uri: Uri): Boolean {
+        // 백업 전 최신 트랜잭션 데이터를 물리 DB 파일에 완전 병합
+        triggerDbCheckpoint()
+
         val dbFile = context.getDatabasePath("myHeritage.db")
         if (!dbFile.exists()) return false
 
@@ -197,7 +215,19 @@ class DefaultDataRepository(private val context: Context) : DataRepository {
     override fun restoreDatabaseFromUri(uri: Uri): Boolean {
         val dbFile = context.getDatabasePath("myHeritage.db")
         return try {
-            database.close() // 데이터베이스 닫기
+            // 1. 싱글톤 클로즈 및 해제
+            MyHeritageDatabase.resetDatabase()
+
+            // 2. 잔존하는 저널 파일(-wal, -shm) 물리 삭제
+            val walFile = File(dbFile.path + "-wal")
+            val shmFile = File(dbFile.path + "-shm")
+            if (walFile.exists()) walFile.delete()
+            if (shmFile.exists()) shmFile.delete()
+            if (dbFile.exists()) {
+                dbFile.delete()
+            }
+
+            // 3. 복사 덮어쓰기
             context.contentResolver.openInputStream(uri)?.use { inputStream ->
                 FileOutputStream(dbFile).use { outputStream ->
                     val buffer = ByteArray(1024)
@@ -207,6 +237,9 @@ class DefaultDataRepository(private val context: Context) : DataRepository {
                     }
                 }
             }
+
+            // 4. 새로운 데이터베이스 커넥션 기동
+            MyHeritageDatabase.getDatabase(context)
             true
         } catch (e: Exception) {
             e.printStackTrace()
@@ -223,6 +256,18 @@ class DefaultDataRepository(private val context: Context) : DataRepository {
                     outStream.write(buffer, 0, bytesRead)
                 }
             }
+        }
+    }
+
+    private fun triggerDbCheckpoint() {
+        try {
+            database.openHelper.writableDatabase.query("PRAGMA wal_checkpoint(FULL)").use { cursor ->
+                if (cursor.moveToFirst()) {
+                    // checkpoint success
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 }

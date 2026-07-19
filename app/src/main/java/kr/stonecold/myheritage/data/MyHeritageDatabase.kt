@@ -33,15 +33,19 @@ abstract class MyHeritageDatabase : RoomDatabase() {
                 val instance = Room.databaseBuilder(
                     context.applicationContext,
                     MyHeritageDatabase::class.java,
-                    "myHeritage.db" // 기존 DB 명칭 그대로 사용
+                    "myHeritage.db"
                 )
-                // 기존 SQLite DB 구조와 호환시키기 위해 fallbackToDestructiveMigration을 쓰지 않고
-                // 마이그레이션이 정의되지 않았을 때의 처리를 하거나, 수동 마이그레이션을 구성해야 함.
-                // 여기서는 우선 호환 가능하도록 구성.
                 .fallbackToDestructiveMigrationOnDowngrade()
                 .build()
                 INSTANCE = instance
                 instance
+            }
+        }
+
+        fun resetDatabase() {
+            synchronized(this) {
+                INSTANCE?.close()
+                INSTANCE = null
             }
         }
     }
