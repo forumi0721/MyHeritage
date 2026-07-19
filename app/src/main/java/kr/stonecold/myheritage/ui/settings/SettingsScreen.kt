@@ -1,5 +1,6 @@
 package kr.stonecold.myheritage.ui.settings
 
+import android.content.Context
 import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
@@ -83,6 +84,69 @@ fun SettingsScreen(
                         .padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
+                    Text(
+                        text = "화면 테마 설정",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+
+                    Card(
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text(text = "화면 모드 선택", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "앱의 화면 테마(라이트/다크/시스템 기본값)를 지정합니다.",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Spacer(modifier = Modifier.height(12.dp))
+                            
+                            val prefs = remember { context.getSharedPreferences("my_heritage_prefs", Context.MODE_PRIVATE) }
+                            var selectedTheme by remember { mutableStateOf(prefs.getInt("pref_theme_mode", 0)) }
+                            
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    RadioButton(
+                                        selected = (selectedTheme == 0),
+                                        onClick = {
+                                            prefs.edit().putInt("pref_theme_mode", 0).apply()
+                                            selectedTheme = 0
+                                        }
+                                    )
+                                    Text("시스템", modifier = Modifier.padding(start = 4.dp), fontSize = 13.sp)
+                                }
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    RadioButton(
+                                        selected = (selectedTheme == 1),
+                                        onClick = {
+                                            prefs.edit().putInt("pref_theme_mode", 1).apply()
+                                            selectedTheme = 1
+                                        }
+                                    )
+                                    Text("라이트", modifier = Modifier.padding(start = 4.dp), fontSize = 13.sp)
+                                }
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    RadioButton(
+                                        selected = (selectedTheme == 2),
+                                        onClick = {
+                                            prefs.edit().putInt("pref_theme_mode", 2).apply()
+                                            selectedTheme = 2
+                                        }
+                                    )
+                                    Text("다크", modifier = Modifier.padding(start = 4.dp), fontSize = 13.sp)
+                                }
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
                     Text(
                         text = "데이터 백업 / 복원",
                         style = MaterialTheme.typography.titleMedium,
