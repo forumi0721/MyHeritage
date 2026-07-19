@@ -2,6 +2,7 @@ package kr.stonecold.myheritage.ui.anniversary
 
 import android.widget.Toast
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Done
@@ -11,6 +12,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kr.stonecold.myheritage.*
@@ -136,23 +138,35 @@ fun EditFactScreen(
                     ) {
                         OutlinedTextField(
                             value = yearStr,
-                            onValueChange = { yearStr = it },
+                            onValueChange = { input ->
+                                val filtered = input.filter { it.isDigit() }
+                                if (filtered.length <= 4) yearStr = filtered
+                            },
                             label = { Text("년") },
                             placeholder = { Text("YYYY") },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             modifier = Modifier.weight(1.2f)
                         )
                         OutlinedTextField(
                             value = monthStr,
-                            onValueChange = { monthStr = it },
+                            onValueChange = { input ->
+                                val filtered = input.filter { it.isDigit() }
+                                if (filtered.length <= 2) monthStr = filtered
+                            },
                             label = { Text("월") },
                             placeholder = { Text("MM") },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             modifier = Modifier.weight(0.9f)
                         )
                         OutlinedTextField(
                             value = dayStr,
-                            onValueChange = { dayStr = it },
+                            onValueChange = { input ->
+                                val filtered = input.filter { it.isDigit() }
+                                if (filtered.length <= 2) dayStr = filtered
+                            },
                             label = { Text("일") },
                             placeholder = { Text("DD") },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             modifier = Modifier.weight(0.9f)
                         )
                     }
@@ -199,11 +213,12 @@ fun EditFactScreen(
                                 return@Button
                             }
                             
-                            val dateCode = (y * 10000 + m * 100 + d).toLong()
-                            if (dateCode <= 0) {
-                                Toast.makeText(context, "유효한 날짜를 입력해주세요.", Toast.LENGTH_SHORT).show()
+                            if (y !in 1000..9999 || m !in 1..12 || d !in 1..31) {
+                                Toast.makeText(context, "유효한 날짜(년: 1000~9999, 월: 1~12, 일: 1~31)를 입력해주세요.", Toast.LENGTH_SHORT).show()
                                 return@Button
                             }
+                            
+                            val dateCode = (y * 10000 + m * 100 + d).toLong()
 
                             coroutineScope.launch {
                                 val entity = FactEntity(

@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
@@ -16,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -105,6 +107,7 @@ fun EditForm(
     data: EditIndividualUiState.Success,
     onSave: (String, String, Int, Long, Int, Long, Int) -> Unit
 ) {
+    val context = LocalContext.current
     var name by remember { mutableStateOf(data.name) }
     var alias by remember { mutableStateOf(data.alias) }
     var gender by remember { mutableStateOf(data.gender) } // 1: 남성, 2: 여성
@@ -277,23 +280,35 @@ fun EditForm(
         ) {
             OutlinedTextField(
                 value = birthYear,
-                onValueChange = { birthYear = it },
+                onValueChange = { input ->
+                    val filtered = input.filter { it.isDigit() }
+                    if (filtered.length <= 4) birthYear = filtered
+                },
                 label = { Text("년") },
                 placeholder = { Text("YYYY") },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 modifier = Modifier.weight(1.2f)
             )
             OutlinedTextField(
                 value = birthMonth,
-                onValueChange = { birthMonth = it },
+                onValueChange = { input ->
+                    val filtered = input.filter { it.isDigit() }
+                    if (filtered.length <= 2) birthMonth = filtered
+                },
                 label = { Text("월") },
                 placeholder = { Text("MM") },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 modifier = Modifier.weight(0.9f)
             )
             OutlinedTextField(
                 value = birthDay,
-                onValueChange = { birthDay = it },
+                onValueChange = { input ->
+                    val filtered = input.filter { it.isDigit() }
+                    if (filtered.length <= 2) birthDay = filtered
+                },
                 label = { Text("일") },
                 placeholder = { Text("DD") },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 modifier = Modifier.weight(0.9f)
             )
         }
@@ -305,6 +320,16 @@ fun EditForm(
                 val y = birthYear.toIntOrNull() ?: 0
                 val m = birthMonth.toIntOrNull() ?: 0
                 val d = birthDay.toIntOrNull() ?: 0
+                
+                // 생년월일을 적기 시작했을 때 유효성 검증
+                val hasAnyDateInput = birthYear.isNotBlank() || birthMonth.isNotBlank() || birthDay.isNotBlank()
+                if (hasAnyDateInput) {
+                    if (y !in 1000..9999 || m !in 1..12 || d !in 1..31) {
+                        Toast.makeText(context, "유효한 생년월일(년: 1000~9999, 월: 1~12, 일: 1~31)을 입력해주세요.", Toast.LENGTH_SHORT).show()
+                        return@Button
+                    }
+                }
+
                 val birthCode = if (y > 0 && m > 0 && d > 0) {
                     (y * 10000 + m * 100 + d).toLong()
                 } else {
