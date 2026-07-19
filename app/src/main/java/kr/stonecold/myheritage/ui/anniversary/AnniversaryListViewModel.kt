@@ -71,11 +71,9 @@ class AnniversaryListViewModel(
                 }
             }
             
-            if (targetCal != null) {
-                val mt = targetCal.get(Calendar.MONTH) + 1
-                val dy = targetCal.get(Calendar.DAY_OF_MONTH)
-                thisYearSolarDateStr = "${targetCal.get(Calendar.YEAR)}년 ${mt}월 ${dy}일"
-            }
+            val mt = targetCal.get(Calendar.MONTH) + 1
+            val dy = targetCal.get(Calendar.DAY_OF_MONTH)
+            thisYearSolarDateStr = "${targetCal.get(Calendar.YEAR)}년 ${mt}월 ${dy}일"
 
             val mainItem = AnniversaryUiItem(
                 id = fact.id,
@@ -95,14 +93,11 @@ class AnniversaryListViewModel(
                 val prevOriginalDateStr = getPrevDateStr(dateVal)
                 
                 // 올해 양력 기일의 하루 전 계산
-                var jesaSolarDateStr = "계산 불가"
-                if (targetCal != null) {
-                    val jesaCal = targetCal.clone() as Calendar
-                    jesaCal.add(Calendar.DAY_OF_MONTH, -1)
-                    val jM = jesaCal.get(Calendar.MONTH) + 1
-                    val jD = jesaCal.get(Calendar.DAY_OF_MONTH)
-                    jesaSolarDateStr = "${jesaCal.get(Calendar.YEAR)}년 ${jM}월 ${jD}일"
-                }
+                val jesaCal = targetCal.clone() as Calendar
+                jesaCal.add(Calendar.DAY_OF_MONTH, -1)
+                val jM = jesaCal.get(Calendar.MONTH) + 1
+                val jD = jesaCal.get(Calendar.DAY_OF_MONTH)
+                val jesaSolarDateStr = "${jesaCal.get(Calendar.YEAR)}년 ${jM}월 ${jD}일"
 
                 val jesaItem = AnniversaryUiItem(
                     id = fact.id + 100000L, // 가상 ID
