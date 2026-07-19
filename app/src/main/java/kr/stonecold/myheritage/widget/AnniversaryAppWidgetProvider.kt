@@ -211,12 +211,12 @@ open class BaseAnniversaryAppWidgetProvider(
         // 음력일 경우 원래 음력 월/일 정보 결합
         val pDateStr = if (pCandidate.fact.dateType == 1) {
             if (pCandidate.virtualLabel == "제사") {
-                "올해 양력: ${pCandidate.solarDateText} (기일: 음력 ${pCandidate.originMonth}/${pCandidate.originDay})"
+                "${pCandidate.solarDateText} (기일: 음력 ${pCandidate.originMonth}/${pCandidate.originDay})"
             } else {
-                "올해 양력: ${pCandidate.solarDateText} (음력 ${pCandidate.originMonth}/${pCandidate.originDay})"
+                "${pCandidate.solarDateText} (음력 ${pCandidate.originMonth}/${pCandidate.originDay})"
             }
         } else {
-            "올해 날짜: ${pCandidate.solarDateText}"
+            pCandidate.solarDateText
         }
         
         val primary = WidgetAnniversary(pDdayStr, pTitleStr, pDateStr)
