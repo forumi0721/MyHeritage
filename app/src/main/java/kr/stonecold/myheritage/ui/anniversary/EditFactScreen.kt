@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Done
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -76,6 +77,8 @@ fun EditFactScreen(
 
     Scaffold(
         topBar = {
+            var showDeleteConfirm by remember { mutableStateOf(false) }
+
             @OptIn(ExperimentalMaterial3Api::class)
             TopAppBar(
                 title = { Text(if (factId == -1L) "생애 이벤트 등록" else "이벤트 정보 수정") },
@@ -84,11 +87,50 @@ fun EditFactScreen(
                         Icon(imageVector = Icons.Default.ArrowBack, contentDescription = "뒤로가기")
                     }
                 },
+                actions = {
+                    if (factId != -1L) {
+                        IconButton(onClick = { showDeleteConfirm = true }) {
+                            Icon(
+                                imageVector = Icons.Default.Delete,
+                                contentDescription = "이벤트 삭제",
+                                tint = MaterialTheme.colorScheme.error
+                            )
+                        }
+                    }
+                },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
                     titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
                 )
             )
+
+            if (showDeleteConfirm) {
+                AlertDialog(
+                    onDismissRequest = { showDeleteConfirm = false },
+                    title = { Text("생애 이벤트 삭제") },
+                    text = { Text("이 생애 기록 이벤트를 영구적으로 삭제하시겠습니까?") },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            showDeleteConfirm = false
+                            coroutineScope.launch {
+                                val fact = repository.getFactById(factId)
+                                if (fact != null) {
+                                    repository.deleteFact(fact)
+                                    Toast.makeText(context, "이벤트가 삭제되었습니다.", Toast.LENGTH_SHORT).show()
+                                    onSuccess()
+                                }
+                            }
+                        }) {
+                            Text("삭제", color = MaterialTheme.colorScheme.error)
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showDeleteConfirm = false }) {
+                            Text("취소")
+                        }
+                    }
+                )
+            }
         }
     ) { innerPadding ->
         Surface(
