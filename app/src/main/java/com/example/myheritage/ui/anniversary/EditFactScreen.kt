@@ -38,6 +38,7 @@ fun EditFactScreen(
     var description by remember { mutableStateOf("") }
     var isRepeated by remember { mutableStateOf(1) } // 0: 매년반복, 1: 안함
     var type by remember { mutableStateOf(0) }
+    var dateType by remember { mutableStateOf(0) } // 0: 양력, 1: 음력
     
     var isLoading by remember { mutableStateOf(true) }
 
@@ -51,6 +52,7 @@ fun EditFactScreen(
                 description = fact.description ?: ""
                 isRepeated = fact.isRepeated
                 type = fact.type
+                dateType = fact.dateType
                 
                 // 날짜 파싱 (YYYYMMDD)
                 val dateVal = fact.startDate
@@ -112,7 +114,22 @@ fun EditFactScreen(
                         modifier = Modifier.fillMaxWidth()
                     )
 
-                    Text("날짜 입력 (양력/음력 무관)", fontWeight = FontWeight.Bold)
+                    Text("날짜 입력 (양력/음력 선택) *", fontWeight = FontWeight.Bold)
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            RadioButton(selected = (dateType == 0), onClick = { dateType = 0 })
+                            Text("양력", modifier = Modifier.padding(start = 4.dp))
+                        }
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            RadioButton(selected = (dateType == 1), onClick = { dateType = 1 })
+                            Text("음력", modifier = Modifier.padding(start = 4.dp))
+                        }
+                    }
+
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         modifier = Modifier.fillMaxWidth()
@@ -195,7 +212,7 @@ fun EditFactScreen(
                                     type = type,
                                     label = label.trim(),
                                     startDate = dateCode,
-                                    dateType = 0,
+                                    dateType = dateType,
                                     isRepeated = isRepeated,
                                     place = place.trim().ifEmpty { null },
                                     description = description.trim().ifEmpty { null },

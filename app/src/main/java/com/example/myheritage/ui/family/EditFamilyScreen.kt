@@ -1,7 +1,6 @@
 package com.example.myheritage.ui.family
 
 import android.widget.Toast
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -37,6 +36,7 @@ fun EditFamilyScreen(
     var wifeId by remember { mutableStateOf(-1L) }
     var fStatus by remember { mutableStateOf(0) }
     var fKind by remember { mutableStateOf(0) }
+    var relativeId by remember { mutableStateOf(-1L) }
     
     var individuals by remember { mutableStateOf<List<IndividualEntity>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
@@ -52,6 +52,7 @@ fun EditFamilyScreen(
                 wifeId = family.wifeId
                 fStatus = family.fStatus
                 fKind = family.fKind
+                relativeId = family.relativeId
             }
         }
         isLoading = false
@@ -87,6 +88,25 @@ fun EditFamilyScreen(
             } else {
                 var showHusbandMenu by remember { mutableStateOf(false) }
                 var showWifeMenu by remember { mutableStateOf(false) }
+                var showStatusMenu by remember { mutableStateOf(false) }
+                var showKindMenu by remember { mutableStateOf(false) }
+                var showRelativeMenu by remember { mutableStateOf(false) }
+                
+                val statusMap = mapOf(
+                    0 to "기혼 (정상)",
+                    1 to "사별",
+                    2 to "이혼",
+                    3 to "사실혼 / 기타"
+                )
+                
+                val kindMap = mapOf(
+                    0 to "일반 가족",
+                    1 to "본가",
+                    2 to "외가",
+                    3 to "처가",
+                    4 to "친가"
+                )
+
                 val scrollState = rememberScrollState()
 
                 Column(
@@ -96,15 +116,17 @@ fun EditFamilyScreen(
                         .padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
+                    Text("가족 구성원 선택", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+
                     // 남편 선택
                     val selectedHusband = individuals.firstOrNull { it.id == husbandId }
-                    Text("남편 선택", fontWeight = FontWeight.Bold)
+                    Text("남편 (남성 인물)", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
                     Box {
                         OutlinedButton(
                             onClick = { showHusbandMenu = true },
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            Text(selectedHusband?.name ?: "남편 인물 선택")
+                            Text(selectedHusband?.name ?: "남편 인물 선택 (미지정)")
                         }
                         DropdownMenu(
                             expanded = showHusbandMenu,
@@ -120,7 +142,7 @@ fun EditFamilyScreen(
                             )
                             individuals.filter { it.gender == 1 }.forEach { person ->
                                 DropdownMenuItem(
-                                    text = { Text(person.name) },
+                                    text = { Text("${person.name} (${person.alias ?: "별칭없음"})") },
                                     onClick = {
                                         husbandId = person.id
                                         showHusbandMenu = false
@@ -132,13 +154,13 @@ fun EditFamilyScreen(
 
                     // 아내 선택
                     val selectedWife = individuals.firstOrNull { it.id == wifeId }
-                    Text("아내 선택", fontWeight = FontWeight.Bold)
+                    Text("아내 (여성 인물)", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
                     Box {
                         OutlinedButton(
                             onClick = { showWifeMenu = true },
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            Text(selectedWife?.name ?: "아내 인물 선택")
+                            Text(selectedWife?.name ?: "아내 인물 선택 (미지정)")
                         }
                         DropdownMenu(
                             expanded = showWifeMenu,
@@ -154,7 +176,7 @@ fun EditFamilyScreen(
                             )
                             individuals.filter { it.gender == 2 }.forEach { person ->
                                 DropdownMenuItem(
-                                    text = { Text(person.name) },
+                                    text = { Text("${person.name} (${person.alias ?: "별칭없음"})") },
                                     onClick = {
                                         wifeId = person.id
                                         showWifeMenu = false
@@ -164,7 +186,96 @@ fun EditFamilyScreen(
                         }
                     }
 
-                    Spacer(modifier = Modifier.weight(1f))
+                    HorizontalDivider()
+                    Text("가족 상세 속성", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+
+                    // 기준 인물(relativeId) 선택
+                    val selectedRelative = individuals.firstOrNull { it.id == relativeId }
+                    Text("기준 인물 (가족의 주체)", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+                    Box {
+                        OutlinedButton(
+                            onClick = { showRelativeMenu = true },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(selectedRelative?.name ?: "기준 인물 지정 (선택 사항)")
+                        }
+                        DropdownMenu(
+                            expanded = showRelativeMenu,
+                            onDismissRequest = { showRelativeMenu = false },
+                            modifier = Modifier.fillMaxWidth(0.9f)
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("미지정") },
+                                onClick = {
+                                    relativeId = -1L
+                                    showRelativeMenu = false
+                                }
+                            )
+                            individuals.forEach { person ->
+                                DropdownMenuItem(
+                                    text = { Text("${person.name} (${person.alias ?: "별칭없음"})") },
+                                    onClick = {
+                                        relativeId = person.id
+                                        showRelativeMenu = false
+                                    }
+                                )
+                            }
+                        }
+                    }
+
+                    // 가족 상태(fStatus) 선택
+                    Text("가족 상태", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+                    Box {
+                        OutlinedButton(
+                            onClick = { showStatusMenu = true },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(statusMap[fStatus] ?: "상태 선택")
+                        }
+                        DropdownMenu(
+                            expanded = showStatusMenu,
+                            onDismissRequest = { showStatusMenu = false },
+                            modifier = Modifier.fillMaxWidth(0.9f)
+                        ) {
+                            statusMap.forEach { (statusCode, statusLabel) ->
+                                DropdownMenuItem(
+                                    text = { Text(statusLabel) },
+                                    onClick = {
+                                        fStatus = statusCode
+                                        showStatusMenu = false
+                                    }
+                                )
+                            }
+                        }
+                    }
+
+                    // 가족 종류(fKind) 선택
+                    Text("가족 유형", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+                    Box {
+                        OutlinedButton(
+                            onClick = { showKindMenu = true },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(kindMap[fKind] ?: "유형 선택")
+                        }
+                        DropdownMenu(
+                            expanded = showKindMenu,
+                            onDismissRequest = { showKindMenu = false },
+                            modifier = Modifier.fillMaxWidth(0.9f)
+                        ) {
+                            kindMap.forEach { (kindCode, kindLabel) ->
+                                DropdownMenuItem(
+                                    text = { Text(kindLabel) },
+                                    onClick = {
+                                        fKind = kindCode
+                                        showKindMenu = false
+                                    }
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(24.dp))
 
                     Button(
                         onClick = {
@@ -175,6 +286,7 @@ fun EditFamilyScreen(
                                     wifeId = wifeId,
                                     fStatus = fStatus,
                                     fKind = fKind,
+                                    relativeId = relativeId,
                                     lastModified = System.currentTimeMillis()
                                 )
                                 if (familyId == -1L) {

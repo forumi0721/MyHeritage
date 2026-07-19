@@ -83,8 +83,9 @@ fun AnniversaryListScreen(
                                     )
                                 }
                                 Spacer(modifier = Modifier.height(4.dp))
+                                val calendarTypeStr = if (fact.dateType == 1) " (음력)" else " (양력)"
                                 Text(
-                                    text = "일시: ${formatLongDate(fact.startDate)}",
+                                    text = "일시: ${formatLongDate(fact.startDate)}$calendarTypeStr",
                                     style = MaterialTheme.typography.bodyMedium
                                 )
                                 if (!fact.place.isNullOrBlank()) {

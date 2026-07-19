@@ -286,7 +286,8 @@ fun FactItem(fact: FactEntity, onEditClick: () -> Unit) {
             }
             Spacer(modifier = Modifier.height(4.dp))
             val dateStr = formatLongDate(fact.startDate)
-            Text(text = "날짜: $dateStr", style = MaterialTheme.typography.bodyMedium)
+            val calendarTypeStr = if (fact.dateType == 1) " (음력)" else " (양력)"
+            Text(text = "날짜: $dateStr$calendarTypeStr", style = MaterialTheme.typography.bodyMedium)
             if (!fact.place.isNullOrBlank()) {
                 Text(text = "장소: ${fact.place}", style = MaterialTheme.typography.bodyMedium)
             }
