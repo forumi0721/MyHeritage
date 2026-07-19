@@ -37,6 +37,19 @@
                 android:name="android.appwidget.provider"
                 android:resource="@xml/anniversary_widget_info" />
         </receiver>
+
+        <!-- 다크 모드용 다가오는 기념일 D-Day 4x1 위젯 리시버 -->
+        <receiver
+            android:name=".widget.AnniversaryDarkAppWidgetProvider"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/anniversary_widget_dark_info" />
+        </receiver>
     </application>
 
 </manifest>

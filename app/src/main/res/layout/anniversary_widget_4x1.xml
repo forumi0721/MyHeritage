@@ -5,54 +5,131 @@
     android:background="@drawable/anniversary_widget_background"
     android:orientation="horizontal"
     android:gravity="center_vertical"
-    android:padding="8dp">
+    android:padding="6dp">
 
-    <!-- D-Day 뱃지 영역 -->
+    <!-- [1st] 첫 번째 기념일 영역 (크게) -->
     <LinearLayout
-        android:layout_width="60dp"
+        android:layout_width="0dp"
         android:layout_height="match_parent"
-        android:background="@drawable/anniversary_widget_background"
-        android:backgroundTint="#FFFFFF"
-        android:gravity="center"
-        android:orientation="vertical"
-        android:layout_marginEnd="10dp">
+        android:layout_weight="1.6"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
 
-        <TextView
-            android:id="@+id/widget_dday"
-            android:layout_width="wrap_content"
+        <!-- D-Day 뱃지 -->
+        <LinearLayout
+            android:layout_width="52dp"
+            android:layout_height="match_parent"
+            android:background="@drawable/anniversary_widget_background"
+            android:backgroundTint="#FFFFFF"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:layout_marginEnd="6dp">
+
+            <TextView
+                android:id="@+id/widget_dday"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="D-Day"
+                android:textColor="#C62828"
+                android:textStyle="bold"
+                android:textSize="13sp" />
+        </LinearLayout>
+
+        <!-- 정보 텍스트 -->
+        <LinearLayout
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:text="D-Day"
-            android:textColor="#C62828"
-            android:textStyle="bold"
-            android:textSize="15sp" />
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/widget_title"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="가장 가까운 기념일"
+                android:textColor="#1A237E"
+                android:textStyle="bold"
+                android:textSize="12sp"
+                android:singleLine="true"
+                android:ellipsize="end" />
+
+            <TextView
+                android:id="@+id/widget_date"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="로딩 중..."
+                android:textColor="#5C6BC0"
+                android:textSize="10sp"
+                android:layout_marginTop="1dp"
+                android:singleLine="true"
+                android:ellipsize="end" />
+        </LinearLayout>
     </LinearLayout>
 
-    <!-- 세부 일정 및 대상자 영역 -->
+    <!-- 세로 구분선 (Divider) -->
+    <View
+        android:layout_width="1dp"
+        android:layout_height="match_parent"
+        android:background="#90CAF9"
+        android:layout_marginTop="4dp"
+        android:layout_marginBottom="4dp"
+        android:layout_marginStart="4dp"
+        android:layout_marginEnd="6dp" />
+
+    <!-- [2nd] 두 번째 기념일 영역 (그 다음 - 작게) -->
     <LinearLayout
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_weight="1"
-        android:orientation="vertical">
+        android:layout_weight="1.0"
+        android:orientation="vertical"
+        android:gravity="start">
+
+        <Row
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            xmlns:android="http://schemas.android.com/apk/res/android">
+            
+            <!-- 이 영역은 LinearLayout의 하위이므로 LinearLayout으로 직접 속성을 대체 -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:id="@+id/widget_next_dday"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="[D-일]"
+                    android:textColor="#E65100"
+                    android:textStyle="bold"
+                    android:textSize="10sp"
+                    android:layout_marginEnd="4dp" />
+
+                <TextView
+                    android:id="@+id/widget_next_title"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="그 다음 기념일"
+                    android:textColor="#37474F"
+                    android:textStyle="bold"
+                    android:textSize="10sp"
+                    android:singleLine="true"
+                    android:ellipsize="end" />
+            </LinearLayout>
+        </Row>
 
         <TextView
-            android:id="@+id/widget_title"
+            android:id="@+id/widget_next_date"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="기념일 정보 로딩 중..."
-            android:textColor="#1A237E"
-            android:textStyle="bold"
-            android:textSize="13sp"
-            android:singleLine="true"
-            android:ellipsize="end" />
-
-        <TextView
-            android:id="@+id/widget_date"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="잠시만 기다려주세요."
-            android:textColor="#5C6BC0"
-            android:textSize="11sp"
-            android:layout_marginTop="2dp"
+            android:text="대기 일정 없음"
+            android:textColor="#78909C"
+            android:textSize="9sp"
+            android:layout_marginTop="1dp"
             android:singleLine="true"
             android:ellipsize="end" />
     </LinearLayout>

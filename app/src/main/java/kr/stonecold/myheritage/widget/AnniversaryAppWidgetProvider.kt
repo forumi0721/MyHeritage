@@ -8,6 +8,7 @@ import android.content.Context
 import android.content.Intent
 import android.icu.util.ChineseCalendar
 import android.icu.util.Calendar as IcuCalendar
+import android.view.View
 import android.widget.RemoteViews
 import kr.stonecold.myheritage.MainActivity
 import kr.stonecold.myheritage.MyHeritageApplication
@@ -20,7 +21,20 @@ import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 import java.util.Calendar
 
-class AnniversaryAppWidgetProvider : AppWidgetProvider() {
+data class WidgetAnniversary(
+    val dday: String,
+    val title: String,
+    val date: String
+)
+
+data class WidgetResult(
+    val primary: WidgetAnniversary,
+    val secondary: WidgetAnniversary?
+)
+
+open class BaseAnniversaryAppWidgetProvider(
+    private val layoutId: Int
+) : AppWidgetProvider() {
 
     override fun onUpdate(
         context: Context,
@@ -32,22 +46,33 @@ class AnniversaryAppWidgetProvider : AppWidgetProvider() {
 
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                // DB에서 팩트 및 인물 데이터 획득
+                // DB 데이터 쿼리
                 val facts = repository.getAllFactsFlow().firstOrNull() ?: emptyList()
                 val individuals = repository.getAllIndividuals().firstOrNull() ?: emptyList()
                 val indMap = individuals.associateBy { it.id }
 
-                val (ddayText, titleText, dateText) = calculateUpcomingAnniversary(facts, indMap)
+                val widgetData = calculateUpcomingAnniversaries(facts, indMap)
 
                 for (appWidgetId in appWidgetIds) {
-                    val views = RemoteViews(context.packageName, R.layout.anniversary_widget_4x1)
+                    val views = RemoteViews(context.packageName, layoutId)
                     
-                    // 뷰 바인딩
-                    views.setTextViewText(R.id.widget_dday, ddayText)
-                    views.setTextViewText(R.id.widget_title, titleText)
-                    views.setTextViewText(R.id.widget_date, dateText)
+                    // 1. 첫 번째 가장 가까운 기념일 셋팅
+                    views.setTextViewText(R.id.widget_dday, widgetData.primary.dday)
+                    views.setTextViewText(R.id.widget_title, widgetData.primary.title)
+                    views.setTextViewText(R.id.widget_date, widgetData.primary.date)
 
-                    // 터치 시 메인화면 구동 펜딩 인텐트 결합
+                    // 2. 두 번째 그 다음 기념일 셋팅 (존재 시 노출, 미존재 시 대기상태 처리)
+                    if (widgetData.secondary != null) {
+                        views.setTextViewText(R.id.widget_next_dday, "[${widgetData.secondary.dday}]")
+                        views.setTextViewText(R.id.widget_next_title, widgetData.secondary.title)
+                        views.setTextViewText(R.id.widget_next_date, widgetData.secondary.date)
+                    } else {
+                        views.setTextViewText(R.id.widget_next_dday, "")
+                        views.setTextViewText(R.id.widget_next_title, "다음 일정 없음")
+                        views.setTextViewText(R.id.widget_next_date, "")
+                    }
+
+                    // 터치 시 앱 메인 진입 PendingIntent 결합
                     val intent = Intent(context, MainActivity::class.java)
                     val pendingIntent = PendingIntent.getActivity(
                         context,
@@ -58,6 +83,9 @@ class AnniversaryAppWidgetProvider : AppWidgetProvider() {
                     views.setOnClickPendingIntent(R.id.widget_dday, pendingIntent)
                     views.setOnClickPendingIntent(R.id.widget_title, pendingIntent)
                     views.setOnClickPendingIntent(R.id.widget_date, pendingIntent)
+                    views.setOnClickPendingIntent(R.id.widget_next_dday, pendingIntent)
+                    views.setOnClickPendingIntent(R.id.widget_next_title, pendingIntent)
+                    views.setOnClickPendingIntent(R.id.widget_next_date, pendingIntent)
 
                     appWidgetManager.updateAppWidget(appWidgetId, views)
                 }
@@ -67,40 +95,37 @@ class AnniversaryAppWidgetProvider : AppWidgetProvider() {
         }
     }
 
-    override fun onReceive(context: Context, intent: Intent) {
-        super.onReceive(context, intent)
-        // 리로드 액션이나 부팅 완료 등 필요한 브로드캐스트 감지 시 위젯 업데이트 강제 기동
-        if (intent.action == AppWidgetManager.ACTION_APPWIDGET_UPDATE || 
-            intent.action == Intent.ACTION_BOOT_COMPLETED) {
-            val appWidgetManager = AppWidgetManager.getInstance(context)
-            val thisWidget = ComponentName(context, AnniversaryAppWidgetProvider::class.java)
-            val appWidgetIds = appWidgetManager.getAppWidgetIds(thisWidget)
-            onUpdate(context, appWidgetManager, appWidgetIds)
-        }
-    }
-
-    private fun calculateUpcomingAnniversary(
+    private fun calculateUpcomingAnniversaries(
         facts: List<FactEntity>,
         indMap: Map<Long, IndividualEntity>
-    ): Triple<String, String, String> {
-        if (facts.isEmpty()) {
-            return Triple("D-일", "등록된 기념일이 없습니다.", "인물 관리에서 기념일을 등록해 주세요.")
+    ): WidgetResult {
+        // 1. 오직 '매년 반복(fact.isRepeated == 0)' 으로 체크된 기념일만 필터링
+        val repeatedFacts = facts.filter { fact -> fact.isRepeated == 0 }
+
+        if (repeatedFacts.isEmpty()) {
+            return WidgetResult(
+                primary = WidgetAnniversary("D-일", "등록된 기념일이 없습니다.", "인물 상세에서 매년반복 일정을 추가하세요."),
+                secondary = null
+            )
         }
 
         val todayCal = Calendar.getInstance()
-        // D-Day 계산을 위해 시분초는 0으로 정규화
         todayCal.set(Calendar.HOUR_OF_DAY, 0)
         todayCal.set(Calendar.MINUTE, 0)
         todayCal.set(Calendar.SECOND, 0)
         todayCal.set(Calendar.MILLISECOND, 0)
-
         val thisYear = todayCal.get(Calendar.YEAR)
-        var nearestFact: FactEntity? = null
-        var nearestTargetSolarTime = Long.MAX_VALUE
-        var nearestDday = -1
-        var nearestSolarDateText = ""
 
-        for (fact in facts) {
+        data class TempCandidate(
+            val fact: FactEntity,
+            val diffMillis: Long,
+            val diffDays: Int,
+            val solarDateText: String
+        )
+
+        val candidates = mutableListOf<TempCandidate>()
+
+        for (fact in repeatedFacts) {
             val personId = if (fact.possessId.startsWith("IND_")) {
                 fact.possessId.substring(4).toLongOrNull() ?: -1L
             } else -1L
@@ -108,9 +133,8 @@ class AnniversaryAppWidgetProvider : AppWidgetProvider() {
 
             val dateVal = fact.startDate
             val isLunar = fact.dateType == 1
-            val isRepeated = fact.isRepeated == 0
 
-            // 1. 원래 월/일 정보 획득
+            // 월/일 파싱
             val month: Int
             val day: Int
             if (dateVal in 10000000..99991231) {
@@ -123,48 +147,63 @@ class AnniversaryAppWidgetProvider : AppWidgetProvider() {
                 day = tempCal.get(Calendar.DAY_OF_MONTH)
             }
 
-            // 2. 올해 기준 후보 양력일 계산
+            // 올해 기준 양력 후보일 구하기
             var candidateSolarCal = calculateSolarCal(thisYear, month, day, isLunar)
 
-            // 만약 오늘보다 이전 날짜이고 매년 반복되는 기념일이면, 내년(2027) 후보일로 승격 연산
-            if (candidateSolarCal.timeInMillis < todayCal.timeInMillis && isRepeated) {
+            // 만약 오늘보다 이전이면 내년 후보일로 이월 계산
+            if (candidateSolarCal.timeInMillis < todayCal.timeInMillis) {
                 candidateSolarCal = calculateSolarCal(thisYear + 1, month, day, isLunar)
             }
 
             val diffMillis = candidateSolarCal.timeInMillis - todayCal.timeInMillis
-            // 이미 지난 단발성 기념일은 스킵
             if (diffMillis < 0) continue
 
-            // 3. 가장 가까운 다가오는 기념일 후보군 갱신
-            if (diffMillis < nearestTargetSolarTime) {
-                nearestTargetSolarTime = diffMillis
-                nearestFact = fact
-                
-                val diffDays = (diffMillis / (1000 * 60 * 60 * 24)).toInt()
-                nearestDday = diffDays
+            val diffDays = (diffMillis / (1000 * 60 * 60 * 24)).toInt()
+            val m = candidateSolarCal.get(Calendar.MONTH) + 1
+            val d = candidateSolarCal.get(Calendar.DAY_OF_MONTH)
+            val solarDateText = "${m}월 ${d}일"
 
-                val m = candidateSolarCal.get(Calendar.MONTH) + 1
-                val d = candidateSolarCal.get(Calendar.DAY_OF_MONTH)
-                nearestSolarDateText = "${candidateSolarCal.get(Calendar.YEAR)}년 ${m}월 ${d}일"
-            }
+            candidates.add(TempCandidate(fact, diffMillis, diffDays, solarDateText))
         }
 
-        if (nearestFact == null) {
-            return Triple("D-일", "다가오는 기념일 없음", "지나지 않은 기념일이 없습니다.")
+        if (candidates.isEmpty()) {
+            return WidgetResult(
+                primary = WidgetAnniversary("D-일", "다가오는 기념일 없음", "지나지 않은 매년반복 일정이 없습니다."),
+                secondary = null
+            )
         }
 
-        val personId = if (nearestFact.possessId.startsWith("IND_")) {
-            nearestFact.possessId.substring(4).toLongOrNull() ?: -1L
+        // 남은 잔여일수(diffMillis) 기준 오름차순 정렬
+        candidates.sortBy { it.diffMillis }
+
+        // 1등 산출
+        val pCandidate = candidates[0]
+        val pPersonId = if (pCandidate.fact.possessId.startsWith("IND_")) {
+            pCandidate.fact.possessId.substring(4).toLongOrNull() ?: -1L
         } else -1L
-        val person = indMap[personId]
-        val personName = person?.name ?: "가족"
+        val pPerson = indMap[pPersonId]
+        val pPersonName = pPerson?.name ?: "가족"
+        val pDdayStr = if (pCandidate.diffDays == 0) "D-Day" else "D-${pCandidate.diffDays}"
+        val pTitleStr = "$pPersonName 님의 ${pCandidate.fact.label ?: "기념일"}"
+        val pDateStr = "올해 날짜: ${pCandidate.solarDateText}${if (pCandidate.fact.dateType == 1) " (음력)" else ""}"
+        val primary = WidgetAnniversary(pDdayStr, pTitleStr, pDateStr)
 
-        val ddayStr = if (nearestDday == 0) "D-Day" else "D-$nearestDday"
-        val labelStr = nearestFact.label ?: "기념일"
-        val titleStr = "$personName 님의 $labelStr"
-        val dateStr = "올해 날짜: $nearestSolarDateText${if (nearestFact.dateType == 1) " (음력 변환)" else ""}"
+        // 2등 산출 (그 다음 기념일)
+        var secondary: WidgetAnniversary? = null
+        if (candidates.size > 1) {
+            val sCandidate = candidates[1]
+            val sPersonId = if (sCandidate.fact.possessId.startsWith("IND_")) {
+                sCandidate.fact.possessId.substring(4).toLongOrNull() ?: -1L
+            } else -1L
+            val sPerson = indMap[sPersonId]
+            val sPersonName = sPerson?.name ?: "가족"
+            val sDdayStr = if (sCandidate.diffDays == 0) "D-Day" else "D-${sCandidate.diffDays}"
+            val sTitleStr = "$sPersonName 님의 ${sCandidate.fact.label ?: "기념일"}"
+            val sDateStr = "${sCandidate.solarDateText}${if (sCandidate.fact.dateType == 1) " (음력)" else ""}"
+            secondary = WidgetAnniversary(sDdayStr, sTitleStr, sDateStr)
+        }
 
-        return Triple(ddayStr, titleStr, dateStr)
+        return WidgetResult(primary, secondary)
     }
 
     private fun calculateSolarCal(year: Int, month: Int, day: Int, isLunar: Boolean): Calendar {
@@ -175,13 +214,11 @@ class AnniversaryAppWidgetProvider : AppWidgetProvider() {
         cal.set(Calendar.MILLISECOND, 0)
 
         if (isLunar) {
-            // ICU ChineseCalendar를 이용한 기원전 2637년 오프셋 계산 음양력 변환
             val cc = ChineseCalendar()
             cc.set(IcuCalendar.EXTENDED_YEAR, year + 2637)
             cc.set(IcuCalendar.MONTH, month - 1)
             cc.set(IcuCalendar.DAY_OF_MONTH, day)
             cc.set(IcuCalendar.IS_LEAP_MONTH, 0)
-
             cal.timeInMillis = cc.timeInMillis
         } else {
             cal.set(Calendar.YEAR, year)
@@ -189,5 +226,19 @@ class AnniversaryAppWidgetProvider : AppWidgetProvider() {
             cal.set(Calendar.DAY_OF_MONTH, day)
         }
         return cal
+    }
+}
+
+// 라이트 모드용 4x1 위젯 프로바이더
+class AnniversaryAppWidgetProvider : BaseAnniversaryAppWidgetProvider(R.layout.anniversary_widget_4x1) {
+    override fun onReceive(context: Context, intent: Intent) {
+        super.onReceive(context, intent)
+        if (intent.action == AppWidgetManager.ACTION_APPWIDGET_UPDATE || 
+            intent.action == Intent.ACTION_BOOT_COMPLETED) {
+            val appWidgetManager = AppWidgetManager.getInstance(context)
+            val thisWidget = ComponentName(context, AnniversaryAppWidgetProvider::class.java)
+            val appWidgetIds = appWidgetManager.getAppWidgetIds(thisWidget)
+            onUpdate(context, appWidgetManager, appWidgetIds)
+        }
     }
 }
