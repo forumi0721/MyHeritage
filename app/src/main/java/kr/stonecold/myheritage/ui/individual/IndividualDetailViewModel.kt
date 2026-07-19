@@ -18,6 +18,7 @@ class IndividualDetailViewModel(
         loadDetailData()
     }
 
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     private fun loadDetailData() {
         if (personId == -1L) {
             _uiState.value = IndividualDetailUiState.Error(IllegalArgumentException("잘못된 인물 ID입니다."))
@@ -27,30 +28,46 @@ class IndividualDetailViewModel(
         viewModelScope.launch {
             _uiState.value = IndividualDetailUiState.Loading
             try {
-                // possess_id 형태로 facts, notes, resources를 쿼리함
                 val possessId = "IND_$personId"
 
-                combine(
-                    repository.getIndividualByIdFlow(personId),
-                    repository.getFactsByPossessIdFlow(possessId),
-                    repository.getNotesByPossessId(possessId),
-                    repository.getResourcesByPossessId(possessId)
-                ) { individual, facts, notes, resources ->
+                repository.getIndividualByIdFlow(personId).flatMapLatest { individual ->
                     if (individual == null) {
-                        IndividualDetailUiState.Error(NoSuchElementException("해당 인물을 찾을 수 없습니다."))
+                        flowOf(IndividualDetailUiState.Error(NoSuchElementException("해당 인물을 찾을 수 없습니다.")))
                     } else {
-                        // 부모 가족 정보나 배우자 가족 정보도 추가 로드
-                        val childFamily = if (individual.familyIdChild != -1L) repository.getFamilyById(individual.familyIdChild) else null
-                        val spouseFamily = if (individual.familyIdSpouse != -1L) repository.getFamilyById(individual.familyIdSpouse) else null
+                        val relativeFlow = if (individual.relativeId != -1L) {
+                            repository.getIndividualByIdFlow(individual.relativeId)
+                        } else {
+                            flowOf(null)
+                        }
 
-                        IndividualDetailUiState.Success(
-                            individual = individual,
-                            facts = facts,
-                            notes = notes,
-                            resources = resources,
-                            childFamily = childFamily,
-                            spouseFamily = spouseFamily
-                        )
+                        combine(
+                            relativeFlow,
+                            repository.getFactsByPossessIdFlow(possessId),
+                            repository.getNotesByPossessId(possessId),
+                            repository.getResourcesByPossessId(possessId)
+                        ) { relative, facts, notes, resources ->
+                            val childFamily = if (individual.familyIdChild != -1L) repository.getFamilyById(individual.familyIdChild) else null
+                            val spouseFamily = if (individual.familyIdSpouse != -1L) repository.getFamilyById(individual.familyIdSpouse) else null
+
+                            val relationText = when (individual.relation) {
+                                1 -> "부모"
+                                2 -> "배우자"
+                                3 -> "자녀"
+                                4 -> "형제자매"
+                                else -> null
+                            }
+
+                            IndividualDetailUiState.Success(
+                                individual = individual,
+                                facts = facts,
+                                notes = notes,
+                                resources = resources,
+                                childFamily = childFamily,
+                                spouseFamily = spouseFamily,
+                                relativeName = relative?.name,
+                                relationText = relationText
+                            )
+                        }
                     }
                 }
                 .catch { t ->
@@ -85,6 +102,8 @@ sealed interface IndividualDetailUiState {
         val notes: List<NoteEntity>,
         val resources: List<ResourceEntity>,
         val childFamily: FamilyEntity?,
-        val spouseFamily: FamilyEntity?
+        val spouseFamily: FamilyEntity?,
+        val relativeName: String?,
+        val relationText: String?
     ) : IndividualDetailUiState
 }

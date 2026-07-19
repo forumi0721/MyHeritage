@@ -210,6 +210,18 @@ fun DetailContent(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
+                
+                // 지정 연관 관계 노출 (나와의 관계 / 연관 대상 인물)
+                if (!data.relativeName.isNullOrBlank() && !data.relationText.isNullOrBlank()) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+                    Text(
+                        text = "지정 관계: ${data.relativeName} 님의 [${data.relationText}]",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.tertiary
+                    )
+                }
             }
         }
 
