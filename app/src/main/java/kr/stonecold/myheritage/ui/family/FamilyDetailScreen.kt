@@ -118,8 +118,9 @@ fun FamilyDetailScreen(
                             Spacer(modifier = Modifier.height(8.dp))
                             
                             if (husband != null) {
+                                val hAlias = if (!husband!!.alias.isNullOrBlank()) " (${husband!!.alias})" else ""
                                 Text(
-                                    text = "남편: ${husband!!.name} (호칭: ${husband!!.alias ?: "없음"})",
+                                    text = "남편: ${husband!!.name}$hAlias",
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .clickable { onItemClick(IndividualDetail(husband!!.id)) }
@@ -134,8 +135,9 @@ fun FamilyDetailScreen(
                             Spacer(modifier = Modifier.height(8.dp))
                             
                             if (wife != null) {
+                                val wAlias = if (!wife!!.alias.isNullOrBlank()) " (${wife!!.alias})" else ""
                                 Text(
-                                    text = "아내: ${wife!!.name} (호칭: ${wife!!.alias ?: "없음"})",
+                                    text = "아내: ${wife!!.name}$wAlias",
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .clickable { onItemClick(IndividualDetail(wife!!.id)) }
@@ -181,8 +183,9 @@ fun FamilyDetailScreen(
                                     )
                                 } else {
                                     availableChildren.forEach { childCand ->
+                                        val candAlias = if (!childCand.alias.isNullOrBlank()) " (${childCand.alias})" else ""
                                         DropdownMenuItem(
-                                            text = { Text("${childCand.name} (${childCand.alias ?: "별칭없음"})") },
+                                            text = { Text("${childCand.name}$candAlias") },
                                             onClick = {
                                                 coroutineScope.launch {
                                                     repository.updateIndividual(
@@ -219,8 +222,9 @@ fun FamilyDetailScreen(
                                             .weight(1f)
                                             .clickable { onItemClick(IndividualDetail(child.id)) }
                                     ) {
+                                        val childAlias = if (!child.alias.isNullOrBlank()) " (${child.alias})" else ""
                                         Text(
-                                            text = child.name,
+                                            text = "${child.name}$childAlias",
                                             fontWeight = FontWeight.Bold,
                                             fontSize = 16.sp
                                         )
