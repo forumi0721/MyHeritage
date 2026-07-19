@@ -17,6 +17,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation3.runtime.NavKey
 import kr.stonecold.myheritage.*
@@ -29,8 +30,11 @@ fun FamilyListScreen(
 ) {
     val context = LocalContext.current
     val app = context.applicationContext as MyHeritageApplication
-    // 간단한 인라인 로드로 쿼리
-    val familiesState by app.repository.getAllFamilies().collectAsState(initial = emptyList())
+    val viewModel: FamilyListViewModel = viewModel {
+        FamilyListViewModel(app.repository)
+    }
+    
+    val familiesState by viewModel.uiState.collectAsStateWithLifecycle()
 
     Scaffold(
         topBar = {
@@ -74,11 +78,20 @@ fun FamilyListScreen(
                                 .clickable { onItemClick(FamilyDetail(family.id)) }
                         ) {
                             Column(modifier = Modifier.padding(16.dp)) {
-                                Text(text = "가족 ID: ${family.id}", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                                val husbandText = family.husbandName ?: "미지정"
+                                val wifeText = family.wifeName ?: "미지정"
+                                
+                                Text(
+                                    text = "$husbandText & $wifeText 가족", 
+                                    fontWeight = FontWeight.Bold, 
+                                    fontSize = 18.sp,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Text(
-                                    text = "남편 ID: ${if (family.husbandId != -1L) family.husbandId else "미지정"}, 아내 ID: ${if (family.wifeId != -1L) family.wifeId else "미지정"}",
-                                    style = MaterialTheme.typography.bodyMedium
+                                    text = "가족 유형: ${family.fKindText}",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
                         }

@@ -183,7 +183,7 @@ fun DetailContent(
                 Spacer(modifier = Modifier.height(8.dp))
                 if (data.childFamily != null) {
                     Text(
-                        text = "부모 측 가족 연결됨 (가족 ID: ${data.childFamily.id})",
+                        text = "부모 측 가족: ${data.childFamilyName}",
                         modifier = Modifier.clickable { onItemClick(FamilyDetail(data.childFamily.id)) },
                         color = MaterialTheme.colorScheme.primary,
                         fontWeight = FontWeight.Medium
@@ -198,7 +198,7 @@ fun DetailContent(
                 Spacer(modifier = Modifier.height(4.dp))
                 if (data.spouseFamily != null) {
                     Text(
-                        text = "배우자 측 가족 연결됨 (가족 ID: ${data.spouseFamily.id})",
+                        text = "배우자 측 가족: ${data.spouseFamilyName}",
                         modifier = Modifier.clickable { onItemClick(FamilyDetail(data.spouseFamily.id)) },
                         color = MaterialTheme.colorScheme.primary,
                         fontWeight = FontWeight.Medium

@@ -49,6 +49,18 @@ class IndividualDetailViewModel(
                             val childFamily = if (individual.familyIdChild != -1L) repository.getFamilyById(individual.familyIdChild) else null
                             val spouseFamily = if (individual.familyIdSpouse != -1L) repository.getFamilyById(individual.familyIdSpouse) else null
 
+                            val childFamilyName = if (childFamily != null) {
+                                val h = if (childFamily.husbandId != -1L) repository.getIndividualById(childFamily.husbandId) else null
+                                val w = if (childFamily.wifeId != -1L) repository.getIndividualById(childFamily.wifeId) else null
+                                "${h?.name ?: "미지정"} & ${w?.name ?: "미지정"} 가족"
+                            } else null
+
+                            val spouseFamilyName = if (spouseFamily != null) {
+                                val h = if (spouseFamily.husbandId != -1L) repository.getIndividualById(spouseFamily.husbandId) else null
+                                val w = if (spouseFamily.wifeId != -1L) repository.getIndividualById(spouseFamily.wifeId) else null
+                                "${h?.name ?: "미지정"} & ${w?.name ?: "미지정"} 가족"
+                            } else null
+
                             val relationText = when (individual.relation) {
                                 1 -> "부모"
                                 2 -> "배우자"
@@ -65,7 +77,9 @@ class IndividualDetailViewModel(
                                 childFamily = childFamily,
                                 spouseFamily = spouseFamily,
                                 relativeName = relative?.name,
-                                relationText = relationText
+                                relationText = relationText,
+                                childFamilyName = childFamilyName,
+                                spouseFamilyName = spouseFamilyName
                             )
                         }
                     }
@@ -104,6 +118,8 @@ sealed interface IndividualDetailUiState {
         val childFamily: FamilyEntity?,
         val spouseFamily: FamilyEntity?,
         val relativeName: String?,
-        val relationText: String?
+        val relationText: String?,
+        val childFamilyName: String?,
+        val spouseFamilyName: String?
     ) : IndividualDetailUiState
 }
