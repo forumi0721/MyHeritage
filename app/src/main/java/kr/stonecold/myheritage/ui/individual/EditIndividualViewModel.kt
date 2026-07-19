@@ -42,6 +42,7 @@ class EditIndividualViewModel(
                         birthDateCode = 0L,
                         birthDateType = 0,
                         individuals = allIndividuals,
+                        facts = emptyList(),
                         isNew = true
                     )
                 } else {
@@ -49,6 +50,8 @@ class EditIndividualViewModel(
                     if (person != null) {
                         // 출생 팩트(type = 3) 조회
                         val birthFact = repository.getFactByPossessIdAndType("IND_$personId", 3)
+                        // 모든 연관 팩트 조회
+                        val facts = repository.getFactsByPossessId("IND_$personId")
                         
                         _uiState.value = EditIndividualUiState.Success(
                             name = person.name,
@@ -63,6 +66,7 @@ class EditIndividualViewModel(
                             birthDateCode = birthFact?.startDate ?: 0L,
                             birthDateType = birthFact?.dateType ?: 0,
                             individuals = allIndividuals.filter { it.id != personId }, // 본인은 제외
+                            facts = facts,
                             isNew = false
                         )
                     } else {
@@ -156,6 +160,7 @@ sealed interface EditIndividualUiState {
         val birthDateCode: Long,
         val birthDateType: Int,
         val individuals: List<IndividualEntity>,
+        val facts: List<FactEntity>,
         val isNew: Boolean
     ) : EditIndividualUiState
 }

@@ -70,7 +70,8 @@ fun MainNavigation() {
           EditIndividualScreen(
             personId = key.id,
             onSuccess = { backStack.removeLastOrNull() },
-            onBackClick = { backStack.removeLastOrNull() }
+            onBackClick = { backStack.removeLastOrNull() },
+            onItemClick = { navKey -> backStack.add(navKey) }
           )
         }
         entry<EditFamily> { key ->

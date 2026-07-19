@@ -28,7 +28,7 @@ fun AnniversaryListScreen(
 ) {
     val context = LocalContext.current
     val app = context.applicationContext as MyHeritageApplication
-    val factsState by app.repository.getAllNonRepeatedFacts().collectAsState(initial = emptyList())
+    val factsState by app.repository.getAllFactsFlow().collectAsState(initial = emptyList())
 
     Scaffold(
         topBar = {

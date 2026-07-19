@@ -31,6 +31,7 @@ interface DataRepository {
     suspend fun deleteFamily(family: FamilyEntity): Int
 
     // Facts
+    fun getAllFactsFlow(): Flow<List<FactEntity>>
     fun getAllNonRepeatedFacts(): Flow<List<FactEntity>>
     suspend fun getFactsByPossessId(possessId: String): List<FactEntity>
     fun getFactsByPossessIdFlow(possessId: String): Flow<List<FactEntity>>
@@ -93,6 +94,7 @@ class DefaultDataRepository(private val context: Context) : DataRepository {
     override suspend fun deleteFamily(family: FamilyEntity): Int = familyDao.delete(family)
 
     // Facts
+    override fun getAllFactsFlow(): Flow<List<FactEntity>> = factDao.getAllFactsFlow()
     override fun getAllNonRepeatedFacts(): Flow<List<FactEntity>> = factDao.getAllNonRepeated()
     override suspend fun getFactsByPossessId(possessId: String): List<FactEntity> = factDao.getByPossessId(possessId)
     override fun getFactsByPossessIdFlow(possessId: String): Flow<List<FactEntity>> = factDao.getByPossessIdFlow(possessId)

@@ -37,6 +37,7 @@ private class FakeMyModelRepository : DataRepository {
     override suspend fun updateFamily(family: FamilyEntity): Int = 0
     override suspend fun deleteFamily(family: FamilyEntity): Int = 0
 
+    override fun getAllFactsFlow(): Flow<List<FactEntity>> = flow { emit(emptyList()) }
     override fun getAllNonRepeatedFacts(): Flow<List<FactEntity>> = flow { emit(emptyList()) }
     override suspend fun getFactsByPossessId(possessId: String): List<FactEntity> = emptyList()
     override fun getFactsByPossessIdFlow(possessId: String): Flow<List<FactEntity>> = flow { emit(emptyList()) }

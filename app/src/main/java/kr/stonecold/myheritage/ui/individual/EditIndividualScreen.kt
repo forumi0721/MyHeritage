@@ -1,6 +1,7 @@
 package kr.stonecold.myheritage.ui.individual
 
 import android.widget.Toast
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
@@ -8,6 +9,7 @@ import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Done
 import androidx.compose.material3.*
@@ -22,13 +24,16 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import kr.stonecold.myheritage.MyHeritageApplication
+import androidx.navigation3.runtime.NavKey
+import kr.stonecold.myheritage.*
+import kr.stonecold.myheritage.data.FactEntity
 
 @Composable
 fun EditIndividualScreen(
     personId: Long,
     onSuccess: () -> Unit,
     onBackClick: () -> Unit,
+    onItemClick: (NavKey) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -72,6 +77,8 @@ fun EditIndividualScreen(
                     val successData = state as EditIndividualUiState.Success
                     EditForm(
                         data = successData,
+                        personId = personId,
+                        onItemClick = onItemClick,
                         onSave = { name, alias, gender, relativeId, relation, birthDateCode, birthDateType ->
                             if (name.isBlank()) {
                                 Toast.makeText(context, "이름을 입력해주세요.", Toast.LENGTH_SHORT).show()
@@ -105,6 +112,8 @@ fun EditIndividualScreen(
 @Composable
 fun EditForm(
     data: EditIndividualUiState.Success,
+    personId: Long,
+    onItemClick: (NavKey) -> Unit,
     onSave: (String, String, Int, Long, Int, Long, Int) -> Unit
 ) {
     val context = LocalContext.current
@@ -311,6 +320,54 @@ fun EditForm(
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 modifier = Modifier.weight(0.9f)
             )
+        }
+
+        // 등록된 다른 기념일 목록 및 [+] 추가 기능 구현 (수정 모드일 때만 노출)
+        if (!data.isNew) {
+            HorizontalDivider()
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "등록된 기념일 목록", 
+                    style = MaterialTheme.typography.titleMedium, 
+                    fontWeight = FontWeight.Bold, 
+                    color = MaterialTheme.colorScheme.primary
+                )
+                IconButton(onClick = { onItemClick(EditFact(-1L, "IND_$personId")) }) {
+                    Icon(imageVector = Icons.Default.Add, contentDescription = "기념일 추가")
+                }
+            }
+            
+            // 출생 팩트(type = 3)를 제외한 나머지 팩트 리스트 출력
+            val otherFacts = data.facts.filter { it.type != 3 }
+            if (otherFacts.isEmpty()) {
+                Text(
+                    text = "등록된 다른 기념일이 없습니다. 우측 [+] 버튼을 눌러 결혼, 회갑 등의 기념일을 추가해보세요.", 
+                    style = MaterialTheme.typography.bodyMedium, 
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            } else {
+                otherFacts.forEach { fact ->
+                    val dateStr = formatLongDate(fact.startDate)
+                    val calendarTypeStr = if (fact.dateType == 1) " (음력)" else " (양력)"
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onItemClick(EditFact(fact.id, "IND_$personId")) }
+                    ) {
+                        Column(modifier = Modifier.padding(12.dp)) {
+                            Text(text = fact.label ?: "기념일", fontWeight = FontWeight.Bold)
+                            Text(text = "날짜: $dateStr$calendarTypeStr", style = MaterialTheme.typography.bodyMedium)
+                            if (!fact.place.isNullOrBlank()) {
+                                Text(text = "장소: ${fact.place}", style = MaterialTheme.typography.bodyMedium)
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         Spacer(modifier = Modifier.height(24.dp))

@@ -77,6 +77,9 @@ interface FamilyDao {
 
 @Dao
 interface FactDao {
+    @Query("SELECT * FROM facts ORDER BY start_date ASC")
+    fun getAllFactsFlow(): Flow<List<FactEntity>>
+
     @Query("SELECT * FROM facts WHERE is_repeated = 0 ORDER BY start_date ASC")
     fun getAllNonRepeated(): Flow<List<FactEntity>>
 
