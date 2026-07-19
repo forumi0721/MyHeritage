@@ -126,14 +126,14 @@ fun TreeContainer(
 ) {
     val hasParent = (data.father != null || data.mother != null)
     
-    // 세대별 노드 수에 따른 가로폭 계산
+    // 세대별 노드 수에 따른 가로폭 계산 (93dp 노드 크기 기준 최적화)
     val maxNodesInRow = maxOf(
         if (data.father != null && data.mother != null) 2 else if (hasParent) 1 else 0,
         data.siblings.size + data.spouses.size + 1,
         data.children.size
     )
-    val computedWidth = maxOf(900.dp, (maxNodesInRow * 200).dp)
-    val computedHeight = if (hasParent) 650.dp else 450.dp
+    val computedWidth = maxOf(750.dp, (maxNodesInRow * 140).dp)
+    val computedHeight = if (hasParent) 550.dp else 380.dp
 
     // 1D 네이티브 스크롤을 걷어내어 드래그(Pan)와 줌(Zoom) 충돌을 방지하고 자유 2D 이동 구현
     Box(
@@ -145,9 +145,8 @@ fun TreeContainer(
                 }
             }
             .background(MaterialTheme.colorScheme.background),
-        contentAlignment = Alignment.Center // 기본 가계도 판이 화면 중앙 부근에 놓이도록 정렬
+        contentAlignment = Alignment.Center
     ) {
-        // 실제 물리 측정 크기(computedWidth, computedHeight)를 항상 고정한 채 그래픽 스케일만 조절하여 텍스트/노드 찌그러짐을 예방
         Box(
             modifier = Modifier
                 .size(computedWidth, computedHeight)
@@ -156,46 +155,52 @@ fun TreeContainer(
                     scaleY = scale,
                     translationX = offsetX,
                     translationY = offsetY,
-                    transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0.5f, 0.5f) // 화면 중앙 기준 트랜스폼
+                    transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0.5f, 0.5f)
                 )
         ) {
             val lineColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
             
-            // 정밀 수치 기반 Canvas 연결선 그리기
+            // 정밀 수치 기반 Canvas 연결선 그리기 (93dp x 53dp 노드 핏 적용)
             Canvas(modifier = Modifier.size(computedWidth, computedHeight)) {
                 val xCenter = size.width / 2
 
                 // 물리 좌표 상수 정의 (그룹 박스 두께와 패딩 적용값)
-                val yParentMid = 52.dp.toPx()
-                val yParentBottom = 104.dp.toPx()
+                val yParentMid = 38.5.dp.toPx() // 노드 절반 26.5dp + 박스 패딩 12dp
+                val yParentBottom = 77.dp.toPx() // 노드 53dp + 박스 패딩 12dp*2
                 
-                val ySelfTop = if (hasParent) 204.dp.toPx() else 40.dp.toPx()
-                val ySelfSpouseTop = if (hasParent) 220.dp.toPx() else 56.dp.toPx()
-                val ySelfSpouseBottom = if (hasParent) 324.dp.toPx() else 160.dp.toPx()
-                val ySelfBottom = if (hasParent) 340.dp.toPx() else 176.dp.toPx()
+                val ySelfTop = if (hasParent) 177.dp.toPx() // 부모 77dp + 간격 100dp
+                else 40.dp.toPx()
+                val ySelfSpouseTop = if (hasParent) 193.dp.toPx() // ySelfTop + 세대패딩 16dp
+                else 56.dp.toPx()
+                val ySelfSpouseBottom = if (hasParent) 270.dp.toPx() // ySelfSpouseTop + 노드 53dp + 부부패딩 12dp*2
+                else 133.dp.toPx()
+                val ySelfBottom = if (hasParent) 286.dp.toPx() // ySelfSpouseBottom + 세대패딩 16dp
+                else 149.dp.toPx()
                 
-                val yChildTop = if (hasParent) 440.dp.toPx() else 276.dp.toPx()
-                val yChildNodeTop = if (hasParent) 456.dp.toPx() else 292.dp.toPx()
+                val yChildTop = if (hasParent) 386.dp.toPx() // 중층하단 286dp + 간격 100dp
+                else 249.dp.toPx()
+                val yChildNodeTop = if (hasParent) 402.dp.toPx() // yChildTop + 세대패딩 16dp
+                else 265.dp.toPx()
 
                 // 1. 부모 부부 -> 본인 부부 연결선
                 if (hasParent) {
                     if (data.father != null && data.mother != null) {
-                        val xFather = xCenter - 82.dp.toPx()
-                        val xMother = xCenter + 82.dp.toPx()
+                        val xFather = xCenter - 58.5.dp.toPx() // 노드 절반 46.5dp + spacedBy 절반 12dp
+                        val xMother = xCenter + 58.5.dp.toPx()
                         
                         // 부모 부부 연결선 (수평)
                         drawLine(
                             color = lineColor,
                             start = Offset(xFather, yParentMid),
                             end = Offset(xMother, yParentMid),
-                            strokeWidth = 6f
+                            strokeWidth = 5f
                         )
                         // 부모 교차점에서 중층 본인 부부 박스 상단으로 내리는 수직선
                         drawLine(
                             color = lineColor,
                             start = Offset(xCenter, yParentMid),
                             end = Offset(xCenter, ySelfTop),
-                            strokeWidth = 6f
+                            strokeWidth = 5f
                         )
                     } else {
                         // 편부모인 경우 해당 단독 부모 하단에서 본인 부부 박스로 수직선 연결
@@ -203,7 +208,7 @@ fun TreeContainer(
                             color = lineColor,
                             start = Offset(xCenter, yParentBottom),
                             end = Offset(xCenter, ySelfTop),
-                            strokeWidth = 6f
+                            strokeWidth = 5f
                         )
                     }
                 }
@@ -217,11 +222,11 @@ fun TreeContainer(
                             color = lineColor,
                             start = Offset(xCenter, ySelfBottom),
                             end = Offset(xCenter, yChildTop),
-                            strokeWidth = 6f
+                            strokeWidth = 5f
                         )
                     } else {
-                        // 자녀 2명 이상 계단식 분기선 그리기
-                        val pitch = 140.dp.toPx() + 24.dp.toPx()
+                        // 자녀 2명 이상 계단식 분기선 그리기 (93dp 노드 적용)
+                        val pitch = 93.dp.toPx() + 24.dp.toPx()
                         val xFirstChild = xCenter - (childCount - 1) * pitch / 2
                         val yHorizontal = (ySelfBottom + yChildTop) / 2
                         
@@ -230,14 +235,14 @@ fun TreeContainer(
                             color = lineColor,
                             start = Offset(xCenter, ySelfBottom),
                             end = Offset(xCenter, yHorizontal),
-                            strokeWidth = 6f
+                            strokeWidth = 5f
                         )
                         // 가로 분기 수평선
                         drawLine(
                             color = lineColor,
                             start = Offset(xFirstChild, yHorizontal),
                             end = Offset(xFirstChild + (childCount - 1) * pitch, yHorizontal),
-                            strokeWidth = 6f
+                            strokeWidth = 5f
                         )
                         // 수평선에서 각 자녀 노드로 하강하는 수직선들
                         for (i in 0 until childCount) {
@@ -246,7 +251,7 @@ fun TreeContainer(
                                 color = lineColor,
                                 start = Offset(xChild, yHorizontal),
                                 end = Offset(xChild, yChildNodeTop),
-                                strokeWidth = 6f
+                                strokeWidth = 5f
                             )
                         }
                     }
@@ -370,37 +375,38 @@ fun TreeNode(
 ) {
     val genderColor = if (person.gender == 1) Color(0xFFE3F2FD) else Color(0xFFFCE4EC)
     val borderColor = if (isRoot) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
-    val borderWidth = if (isRoot) 3.dp else 1.dp
+    val borderWidth = if (isRoot) 2.dp else 1.dp
 
     Box(
         modifier = Modifier
-            .width(140.dp)
-            .height(80.dp)
-            .background(genderColor, shape = RoundedCornerShape(8.dp))
-            .border(borderWidth, borderColor, shape = RoundedCornerShape(8.dp))
+            .requiredSize(93.dp, 53.dp) // 카드 뭉개짐(찌그러짐)을 원천 방지하기 위해 requiredSize 지정
+            .background(genderColor, shape = RoundedCornerShape(6.dp))
+            .border(borderWidth, borderColor, shape = RoundedCornerShape(6.dp))
             .clickable { onClick() }
-            .padding(8.dp),
+            .padding(4.dp),
         contentAlignment = Alignment.Center
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
                 text = person.name,
                 fontWeight = FontWeight.Bold,
-                fontSize = 15.sp,
+                fontSize = 11.sp, // 축소된 크기에 맞게 가나다 가독 비율 축소
                 color = Color.Black,
-                textAlign = TextAlign.Center
+                textAlign = TextAlign.Center,
+                maxLines = 1
             )
-            Spacer(modifier = Modifier.height(2.dp))
+            Spacer(modifier = Modifier.height(1.dp))
             Text(
                 text = label,
-                fontSize = 11.sp,
+                fontSize = 8.sp,
                 color = Color.DarkGray,
-                fontWeight = FontWeight.SemiBold
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1
             )
             if (!person.alias.isNullOrBlank()) {
                 Text(
                     text = "(${person.alias})",
-                    fontSize = 11.sp,
+                    fontSize = 8.sp,
                     color = Color.Gray,
                     maxLines = 1
                 )
