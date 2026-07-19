@@ -8,7 +8,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -16,9 +15,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation3.runtime.NavKey
 import kr.stonecold.myheritage.*
-import kr.stonecold.myheritage.ui.individual.formatLongDate
 
 @Composable
 fun AnniversaryListScreen(
@@ -28,7 +28,11 @@ fun AnniversaryListScreen(
 ) {
     val context = LocalContext.current
     val app = context.applicationContext as MyHeritageApplication
-    val factsState by app.repository.getAllFactsFlow().collectAsState(initial = emptyList())
+    val viewModel: AnniversaryListViewModel = viewModel {
+        AnniversaryListViewModel(app.repository)
+    }
+    
+    val factsState by viewModel.uiState.collectAsStateWithLifecycle()
 
     Scaffold(
         topBar = {
@@ -69,38 +73,42 @@ fun AnniversaryListScreen(
                             Column(modifier = Modifier.padding(16.dp)) {
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Text(
-                                        text = fact.label ?: "생애 이벤트",
+                                        text = fact.label,
                                         fontWeight = FontWeight.Bold,
-                                        fontSize = 16.sp
+                                        fontSize = 18.sp,
+                                        color = MaterialTheme.colorScheme.primary
                                     )
-                                    Text(
-                                        text = "연관 ID: ${fact.possessId}",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
+                                    Surface(
+                                        color = MaterialTheme.colorScheme.secondaryContainer,
+                                        shape = MaterialTheme.shapes.small
+                                    ) {
+                                        Text(
+                                            text = "대상자: ${fact.personName}",
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = MaterialTheme.colorScheme.onSecondaryContainer,
+                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                        )
+                                    }
                                 }
-                                Spacer(modifier = Modifier.height(4.dp))
+                                Spacer(modifier = Modifier.height(8.dp))
                                 val calendarTypeStr = if (fact.dateType == 1) " (음력)" else " (양력)"
                                 Text(
-                                    text = "일시: ${formatLongDate(fact.startDate)}$calendarTypeStr",
-                                    style = MaterialTheme.typography.bodyMedium
+                                    text = "원래 날짜: ${fact.originalDateStr}$calendarTypeStr",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
-                                if (!fact.place.isNullOrBlank()) {
-                                    Text(
-                                        text = "장소: ${fact.place}",
-                                        style = MaterialTheme.typography.bodyMedium
-                                    )
-                                }
-                                if (!fact.description.isNullOrBlank()) {
-                                    Text(
-                                        text = fact.description,
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(
+                                    text = "올해 날짜: ${fact.thisYearSolarDateStr} (양력)",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.tertiary
+                                )
                             }
                         }
                     }
