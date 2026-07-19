@@ -62,8 +62,14 @@ fun SettingsScreen(
     LaunchedEffect(state) {
         when (state) {
             is SettingsUiState.Success -> {
-                Toast.makeText(context, (state as SettingsUiState.Success).message, Toast.LENGTH_LONG).show()
+                val msg = (state as SettingsUiState.Success).message
+                Toast.makeText(context, msg, Toast.LENGTH_LONG).show()
                 viewModel.resetState()
+                
+                // 복원 성공인 경우, 새로운 DB 데이터 반영을 위해 액티비티 즉각 재기동(Recreate) 리프레시 실행!
+                if (msg.contains("복원")) {
+                    context.findActivity()?.recreate()
+                }
             }
             is SettingsUiState.Error -> {
                 Toast.makeText(context, "에러: ${(state as SettingsUiState.Error).throwable.localizedMessage}", Toast.LENGTH_LONG).show()
@@ -318,4 +324,16 @@ fun SettingsScreen(
             }
         )
     }
+}
+
+// Context에서 ComponentActivity를 안전하게 꺼내기 위한 헬퍼 확장 함수
+fun android.content.Context.findActivity(): androidx.activity.ComponentActivity? {
+    var currentContext = this
+    while (currentContext is android.content.ContextWrapper) {
+        if (currentContext is androidx.activity.ComponentActivity) {
+            return currentContext
+        }
+        currentContext = currentContext.baseContext
+    }
+    return null
 }
