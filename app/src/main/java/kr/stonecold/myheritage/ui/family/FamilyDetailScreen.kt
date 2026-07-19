@@ -3,8 +3,12 @@ package kr.stonecold.myheritage.ui.family
 import android.widget.Toast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -18,6 +22,7 @@ import androidx.navigation3.runtime.NavKey
 import kr.stonecold.myheritage.*
 import kr.stonecold.myheritage.data.FamilyEntity
 import kr.stonecold.myheritage.data.IndividualEntity
+import kotlinx.coroutines.launch
 
 @Composable
 fun FamilyDetailScreen(
@@ -29,22 +34,33 @@ fun FamilyDetailScreen(
     val context = LocalContext.current
     val app = context.applicationContext as MyHeritageApplication
     val repository = app.repository
+    val coroutineScope = rememberCoroutineScope()
 
     var family by remember { mutableStateOf<FamilyEntity?>(null) }
     var husband by remember { mutableStateOf<IndividualEntity?>(null) }
     var wife by remember { mutableStateOf<IndividualEntity?>(null) }
     var children by remember { mutableStateOf<List<IndividualEntity>>(emptyList()) }
+    var allIndividuals by remember { mutableStateOf<List<IndividualEntity>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
+
+    var showAddChildMenu by remember { mutableStateOf(false) }
+
+    fun loadData() {
+        coroutineScope.launch {
+            val fam = repository.getFamilyById(familyId)
+            if (fam != null) {
+                family = fam
+                husband = if (fam.husbandId != -1L) repository.getIndividualById(fam.husbandId) else null
+                wife = if (fam.wifeId != -1L) repository.getIndividualById(fam.wifeId) else null
+                children = repository.getIndividualsByFamilyIdChild(fam.id)
+                allIndividuals = repository.getAllIndividualsDirect()
+            }
+        }
+    }
 
     LaunchedEffect(familyId) {
         isLoading = true
-        val fam = repository.getFamilyById(familyId)
-        if (fam != null) {
-            family = fam
-            if (fam.husbandId != -1L) husband = repository.getIndividualById(fam.husbandId)
-            if (fam.wifeId != -1L) wife = repository.getIndividualById(fam.wifeId)
-            children = repository.getIndividualsByFamilyIdChild(fam.id)
-        }
+        loadData()
         isLoading = false
     }
 
@@ -85,18 +101,20 @@ fun FamilyDetailScreen(
                     Text("가족 정보를 찾을 수 없습니다.")
                 }
             } else {
+                val scrollState = rememberScrollState()
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
+                        .verticalScroll(scrollState)
                         .padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    Text(text = "가족 요약", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    Text(text = "가족 정보", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                     
-                    // 부부 노드
+                    // 부부 노드 카드
                     Card(modifier = Modifier.fillMaxWidth()) {
                         Column(modifier = Modifier.padding(16.dp)) {
-                            Text(text = "부부", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                            Text(text = "배우자 연결", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                             Spacer(modifier = Modifier.height(8.dp))
                             
                             if (husband != null) {
@@ -110,7 +128,7 @@ fun FamilyDetailScreen(
                                     fontWeight = FontWeight.Medium
                                 )
                             } else {
-                                Text(text = "남편: 등록 정보 없음", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text(text = "남편: 지정 안 됨", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                             
                             Spacer(modifier = Modifier.height(8.dp))
@@ -126,39 +144,109 @@ fun FamilyDetailScreen(
                                     fontWeight = FontWeight.Medium
                                 )
                             } else {
-                                Text(text = "아내: 등록 정보 없음", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text(text = "아내: 지정 안 됨", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                         }
                     }
 
-                    // 자녀 목록
-                    Text(text = "자녀 세대", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    HorizontalDivider()
+
+                    // 자녀 세대 헤더 및 추가 버튼
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(text = "자녀 세대 목록", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                        
+                        // 자녀 추가 드롭다운 트리거 버튼
+                        Box {
+                            IconButton(onClick = { showAddChildMenu = true }) {
+                                Icon(imageVector = Icons.Default.Add, contentDescription = "자녀 추가")
+                            }
+                            
+                            // 현재 가족의 자녀가 아닌 다른 인물들 필터링
+                            val availableChildren = allIndividuals.filter { 
+                                it.familyIdChild != family!!.id && it.id != husband?.id && it.id != wife?.id
+                            }
+                            
+                            DropdownMenu(
+                                expanded = showAddChildMenu,
+                                onDismissRequest = { showAddChildMenu = false }
+                            ) {
+                                if (availableChildren.isEmpty()) {
+                                    DropdownMenuItem(
+                                        text = { Text("자녀로 추가할 인물이 없습니다.") },
+                                        onClick = { showAddChildMenu = false }
+                                    )
+                                } else {
+                                    availableChildren.forEach { childCand ->
+                                        DropdownMenuItem(
+                                            text = { Text("${childCand.name} (${childCand.alias ?: "별칭없음"})") },
+                                            onClick = {
+                                                coroutineScope.launch {
+                                                    repository.updateIndividual(
+                                                        childCand.copy(familyIdChild = family!!.id)
+                                                    )
+                                                    Toast.makeText(context, "${childCand.name} 자녀가 추가되었습니다.", Toast.LENGTH_SHORT).show()
+                                                    loadData()
+                                                }
+                                                showAddChildMenu = false
+                                            }
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+
                     if (children.isEmpty()) {
-                        Text(text = "등록된 자녀가 없습니다.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(text = "등록된 자녀가 없습니다. 우측 상단의 [+] 버튼을 눌러 자녀 인물을 이 가족에 연결해 주세요.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     } else {
                         children.forEach { child ->
                             Card(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable { onItemClick(IndividualDetail(child.id)) }
+                                modifier = Modifier.fillMaxWidth()
                             ) {
                                 Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .padding(16.dp),
-                                    verticalAlignment = Alignment.CenterVertically
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween
                                 ) {
-                                    Text(
-                                        text = child.name,
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 16.sp,
-                                        modifier = Modifier.weight(1f)
-                                    )
-                                    Text(
-                                        text = if (child.gender == 1) "아들" else "딸",
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
+                                    Column(
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .clickable { onItemClick(IndividualDetail(child.id)) }
+                                    ) {
+                                        Text(
+                                            text = child.name,
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 16.sp
+                                        )
+                                        Text(
+                                            text = "성별: ${if (child.gender == 1) "남성" else "여성"}",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                    
+                                    // 자녀 관계 해제 버튼
+                                    IconButton(
+                                        onClick = {
+                                            coroutineScope.launch {
+                                                repository.updateIndividual(child.copy(familyIdChild = -1L))
+                                                Toast.makeText(context, "${child.name} 자녀 연결을 해제했습니다.", Toast.LENGTH_SHORT).show()
+                                                loadData()
+                                            }
+                                        }
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Close, 
+                                            contentDescription = "자녀 관계 끊기",
+                                            tint = MaterialTheme.colorScheme.error
+                                        )
+                                    }
                                 }
                             }
                         }
