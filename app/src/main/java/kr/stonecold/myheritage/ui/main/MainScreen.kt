@@ -113,34 +113,11 @@ fun DashboardContent(
                 Spacer(modifier = Modifier.height(12.dp))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceAround,
-                    verticalAlignment = Alignment.CenterVertically
+                    horizontalArrangement = Arrangement.SpaceAround
                 ) {
                     StatItem(label = "등록된 인물", count = data.totalIndividuals)
                     StatItem(label = "등록된 가족", count = data.totalFamilies)
                     StatItem(label = "등록된 기념일", count = data.totalAnniversaries)
-                    
-                    // About 앱 정보 클릭 아이템 추가
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier
-                            .clickable { showAboutDialog = true }
-                            .padding(horizontal = 8.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Info,
-                            contentDescription = "앱 정보",
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(28.dp)
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = "About",
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.8f)
-                        )
-                    }
                 }
             }
         }
@@ -239,6 +216,11 @@ fun DashboardContent(
                 title = "백업 & 설정",
                 icon = Icons.Default.Settings,
                 onClick = { onItemClick(Settings) }
+            ),
+            MenuItem(
+                title = "About",
+                icon = Icons.Default.Info,
+                onClick = { showAboutDialog = true }
             )
         )
 
