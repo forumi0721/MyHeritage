@@ -5,6 +5,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -14,12 +15,13 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -101,185 +103,239 @@ fun TreeContainer(
 ) {
     val horizontalScrollState = rememberScrollState()
     val verticalScrollState = rememberScrollState()
+    
+    // 확대 축소를 위한 스케일 상태 (기본 1.0, 범위 0.4 ~ 2.5)
+    var scale by remember { mutableStateOf(1f) }
 
-    // 최대 노드 수에 비례한 가로폭 계산으로 여백 최소화 및 가로 스크롤 범위 확보
+    val hasParent = (data.father != null || data.mother != null)
+    
+    // 세대별 노드 수에 따른 가로폭 계산
     val maxNodesInRow = maxOf(
-        if (data.father != null || data.mother != null) 2 else 0,
+        if (data.father != null && data.mother != null) 2 else if (hasParent) 1 else 0,
         data.siblings.size + data.spouses.size + 1,
         data.children.size
     )
-    val computedWidth = maxOf(850.dp, (maxNodesInRow * 188).dp)
+    val computedWidth = maxOf(900.dp, (maxNodesInRow * 200).dp)
+    val computedHeight = if (hasParent) 650.dp else 450.dp
 
-    // 왼쪽 패딩을 대폭 축소하여 좌측 여백 차단 (32.dp -> 8.dp)
+    // 핀치 줌 및 드래그 스크롤이 매끄럽게 어우러지도록 설계
     Box(
         modifier = Modifier
             .fillMaxSize()
             .horizontalScroll(horizontalScrollState)
             .verticalScroll(verticalScrollState)
-            .padding(vertical = 24.dp, horizontal = 8.dp)
-    ) {
-        val lineColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f)
-        
-        // Canvas 높이: 부모 세대 유무에 맞춰 최적화
-        val hasParent = (data.father != null || data.mother != null)
-        val canvasHeight = if (hasParent) 450.dp else 300.dp
-        
-        Canvas(modifier = Modifier.size(computedWidth, canvasHeight)) {
-            val xCenter = size.width / 2
-            
-            // Y축 물리적 좌표 상수 정의
-            val yParentMid = 40.dp.toPx()
-            val yParentBottom = 80.dp.toPx()
-            val ySelfTop = if (hasParent) 160.dp.toPx() else 40.dp.toPx()
-            val ySelfBottom = if (hasParent) 240.dp.toPx() else 120.dp.toPx()
-            val yChildTop = if (hasParent) 320.dp.toPx() else 200.dp.toPx()
-
-            // 1. 부모 -> 본인 수직 연결선
-            if (hasParent) {
-                if (data.father != null && data.mother != null) {
-                    val xFather = xCenter - 102.dp.toPx()
-                    val xMother = xCenter + 102.dp.toPx()
-                    // 부모 간 수평선
-                    drawLine(
-                        color = lineColor,
-                        start = Offset(xFather, yParentMid),
-                        end = Offset(xMother, yParentMid),
-                        strokeWidth = 5f
-                    )
-                    // 부모 중앙 교차점에서 본인 노드로 향하는 수직선
-                    drawLine(
-                        color = lineColor,
-                        start = Offset(xCenter, yParentMid),
-                        end = Offset(xCenter, ySelfTop),
-                        strokeWidth = 5f
-                    )
-                } else {
-                    // 한 부모만 존재하는 경우, 그 부모의 밑에서 바로 본인으로 수직선 연결
-                    drawLine(
-                        color = lineColor,
-                        start = Offset(xCenter, yParentBottom),
-                        end = Offset(xCenter, ySelfTop),
-                        strokeWidth = 5f
-                    )
+            .pointerInput(Unit) {
+                detectTransformGestures { _, _, zoom, _ ->
+                    scale = (scale * zoom).coerceIn(0.4f, 2.5f)
                 }
             }
+            .padding(16.dp)
+    ) {
+        // 확대 축소 스케일이 반영된 줌 전용 컨테이너 Box
+        Box(
+            modifier = Modifier
+                .size(computedWidth * scale, computedHeight * scale)
+                .graphicsLayer(
+                    scaleX = scale,
+                    scaleY = scale,
+                    transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0f, 0f)
+                )
+        ) {
+            val lineColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
+            
+            // 정밀 수치 기반 Canvas 연결선 그리기
+            Canvas(modifier = Modifier.size(computedWidth, computedHeight)) {
+                val xCenter = size.width / 2
 
-            // 2. 본인 -> 자녀 연결선 (계단식 꺾임 분기선 지원)
-            if (data.children.isNotEmpty()) {
-                val childCount = data.children.size
-                if (childCount == 1) {
-                    // 자녀가 1명일 때는 직통 수직선 연결
-                    drawLine(
-                        color = lineColor,
-                        start = Offset(xCenter, ySelfBottom),
-                        end = Offset(xCenter, yChildTop),
-                        strokeWidth = 5f
-                    )
-                } else {
-                    // 자녀가 2명 이상일 때는 수평 분기선 그리기
-                    val pitch = 140.dp.toPx() + 48.dp.toPx()
-                    val xFirstChild = xCenter - (childCount - 1) * pitch / 2
-                    val yHorizontal = (ySelfBottom + yChildTop) / 2
-                    
-                    // 본인 노드 바닥에서 수평선까지 수직 하강
-                    drawLine(
-                        color = lineColor,
-                        start = Offset(xCenter, ySelfBottom),
-                        end = Offset(xCenter, yHorizontal),
-                        strokeWidth = 5f
-                    )
-                    // 자녀들을 커버하는 가로 수평선
-                    drawLine(
-                        color = lineColor,
-                        start = Offset(xFirstChild, yHorizontal),
-                        end = Offset(xFirstChild + (childCount - 1) * pitch, yHorizontal),
-                        strokeWidth = 5f
-                    )
-                    // 수평 분기선에서 각 자녀 노드로 이어지는 수직선들
-                    for (i in 0 until childCount) {
-                        val xChild = xFirstChild + i * pitch
+                // 물리 좌표 상수 정의 (그룹 박스 두께와 패딩 적용값)
+                val yParentMid = 52.dp.toPx()
+                val yParentBottom = 104.dp.toPx()
+                
+                val ySelfTop = if (hasParent) 204.dp.toPx() else 40.dp.toPx()
+                val ySelfSpouseTop = if (hasParent) 220.dp.toPx() else 56.dp.toPx()
+                val ySelfSpouseBottom = if (hasParent) 324.dp.toPx() else 160.dp.toPx()
+                val ySelfBottom = if (hasParent) 340.dp.toPx() else 176.dp.toPx()
+                
+                val yChildTop = if (hasParent) 440.dp.toPx() else 276.dp.toPx()
+                val yChildNodeTop = if (hasParent) 456.dp.toPx() else 292.dp.toPx()
+
+                // 1. 부모 부부 -> 본인 부부 연결선
+                if (hasParent) {
+                    if (data.father != null && data.mother != null) {
+                        val xFather = xCenter - 82.dp.toPx()
+                        val xMother = xCenter + 82.dp.toPx()
+                        
+                        // 부모 부부 연결선 (수평)
                         drawLine(
                             color = lineColor,
-                            start = Offset(xChild, yHorizontal),
-                            end = Offset(xChild, yChildTop),
-                            strokeWidth = 5f
+                            start = Offset(xFather, yParentMid),
+                            end = Offset(xMother, yParentMid),
+                            strokeWidth = 6f
+                        )
+                        // 부모 교차점에서 중층 본인 부부 박스 상단으로 내리는 수직선
+                        drawLine(
+                            color = lineColor,
+                            start = Offset(xCenter, yParentMid),
+                            end = Offset(xCenter, ySelfTop),
+                            strokeWidth = 6f
+                        )
+                    } else {
+                        // 편부모인 경우 해당 단독 부모 하단에서 본인 부부 박스로 수직선 연결
+                        drawLine(
+                            color = lineColor,
+                            start = Offset(xCenter, yParentBottom),
+                            end = Offset(xCenter, ySelfTop),
+                            strokeWidth = 6f
                         )
                     }
                 }
+
+                // 2. 본인 부부 -> 자녀 세대 연결선 (계단식 꺾임 분기선)
+                if (data.children.isNotEmpty()) {
+                    val childCount = data.children.size
+                    if (childCount == 1) {
+                        // 자녀 1명 직통 수직선
+                        drawLine(
+                            color = lineColor,
+                            start = Offset(xCenter, ySelfBottom),
+                            end = Offset(xCenter, yChildTop),
+                            strokeWidth = 6f
+                        )
+                    } else {
+                        // 자녀 2명 이상 계단식 분기선 그리기
+                        val pitch = 140.dp.toPx() + 24.dp.toPx()
+                        val xFirstChild = xCenter - (childCount - 1) * pitch / 2
+                        val yHorizontal = (ySelfBottom + yChildTop) / 2
+                        
+                        // 본인 부부 박스 바닥에서 수평 분기선까지 하강 수직선
+                        drawLine(
+                            color = lineColor,
+                            start = Offset(xCenter, ySelfBottom),
+                            end = Offset(xCenter, yHorizontal),
+                            strokeWidth = 6f
+                        )
+                        // 가로 분기 수평선
+                        drawLine(
+                            color = lineColor,
+                            start = Offset(xFirstChild, yHorizontal),
+                            end = Offset(xFirstChild + (childCount - 1) * pitch, yHorizontal),
+                            strokeWidth = 6f
+                        )
+                        // 수평선에서 각 자녀 노드로 하강하는 수직선들
+                        for (i in 0 until childCount) {
+                            val xChild = xFirstChild + i * pitch
+                            drawLine(
+                                color = lineColor,
+                                start = Offset(xChild, yHorizontal),
+                                end = Offset(xChild, yChildNodeTop),
+                                strokeWidth = 6f
+                            )
+                        }
+                    }
+                }
             }
-        }
 
-        // 실제 노드들을 담은 레이아웃
-        Column(
-            modifier = Modifier.width(computedWidth),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(80.dp)
-        ) {
-            // 1. 상층: 부모 세대 (부모가 최소 한 명이라도 있을 때만 노출하여 '정보 없음' 박스를 소멸)
-            if (hasParent) {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(64.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    if (data.father != null) {
-                        TreeNode(person = data.father, label = "부 (아버지)", onClick = { onItemClick(IndividualDetail(data.father.id)) })
-                    }
-
+            // 실제 노드 및 그룹핑 아웃라인 박스 레이아웃
+            Column(
+                modifier = Modifier.width(computedWidth),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(100.dp)
+            ) {
+                // 1. 상층: 부모 세대 (부모가 한 명이라도 존재하면 노출)
+                if (hasParent) {
                     if (data.father != null && data.mother != null) {
-                        Text("부부", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                    }
-
-                    if (data.mother != null) {
+                        // 부부 그룹 외부 테두리 박스 감싸기
+                        Box(
+                            modifier = Modifier
+                                .border(1.5.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f), RoundedCornerShape(12.dp))
+                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.04f), RoundedCornerShape(12.dp))
+                                .padding(12.dp)
+                        ) {
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(24.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                TreeNode(person = data.father, label = "부 (아버지)", onClick = { onItemClick(IndividualDetail(data.father.id)) })
+                                TreeNode(person = data.mother, label = "모 (어머니)", onClick = { onItemClick(IndividualDetail(data.mother.id)) })
+                            }
+                        }
+                    } else if (data.father != null) {
+                        TreeNode(person = data.father, label = "부 (아버지)", onClick = { onItemClick(IndividualDetail(data.father.id)) })
+                    } else if (data.mother != null) {
                         TreeNode(person = data.mother, label = "모 (어머니)", onClick = { onItemClick(IndividualDetail(data.mother.id)) })
                     }
                 }
-            }
 
-            // 2. 중층: 본인, 배우자 및 형제자매
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(48.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // 형제자매들 (왼쪽)
-                data.siblings.filter { it.gender == 1 }.forEach { sibling ->
-                    TreeNode(person = sibling, label = "형제", onClick = { onItemClick(IndividualDetail(sibling.id)) })
-                }
-
-                // 본인 노드
-                TreeNode(
-                    person = data.self,
-                    label = "본인",
-                    isRoot = true,
-                    onClick = { onItemClick(IndividualDetail(data.self.id)) }
-                )
-
-                // 배우자 노드들
-                data.spouses.forEach { spouse ->
-                    TreeNode(
-                        person = spouse,
-                        label = "배우자",
-                        onClick = { onItemClick(IndividualDetail(spouse.id)) }
-                    )
-                }
-
-                // 자매들 (오른쪽)
-                data.siblings.filter { it.gender == 2 }.forEach { sibling ->
-                    TreeNode(person = sibling, label = "자매", onClick = { onItemClick(IndividualDetail(sibling.id)) })
-                }
-            }
-
-            // 3. 하층: 자녀 세대 (자녀가 있을 때만 노출)
-            if (data.children.isNotEmpty()) {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(48.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                // 2. 중층: 형제, 자매 및 본인 부부 통합 세대 박스
+                Box(
+                    modifier = Modifier
+                        .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.25f), RoundedCornerShape(16.dp))
+                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.05f), RoundedCornerShape(16.dp))
+                        .padding(16.dp)
                 ) {
-                    data.children.forEach { child ->
-                        TreeNode(
-                            person = child,
-                            label = "자녀",
-                            onClick = { onItemClick(IndividualDetail(child.id)) }
-                        )
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(24.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        // 형제들 (왼쪽)
+                        data.siblings.filter { it.gender == 1 }.forEach { sibling ->
+                            TreeNode(person = sibling, label = "형제", onClick = { onItemClick(IndividualDetail(sibling.id)) })
+                        }
+
+                        // 본인 부부 결합 그룹 박스
+                        Box(
+                            modifier = Modifier
+                                .border(2.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(12.dp))
+                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.06f), RoundedCornerShape(12.dp))
+                                .padding(12.dp)
+                        ) {
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(24.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                TreeNode(
+                                    person = data.self,
+                                    label = "본인",
+                                    isRoot = true,
+                                    onClick = { onItemClick(IndividualDetail(data.self.id)) }
+                                )
+                                data.spouses.forEach { spouse ->
+                                    TreeNode(
+                                        person = spouse,
+                                        label = "배우자",
+                                        onClick = { onItemClick(IndividualDetail(spouse.id)) }
+                                    )
+                                }
+                            }
+                        }
+
+                        // 자매들 (오른쪽)
+                        data.siblings.filter { it.gender == 2 }.forEach { sibling ->
+                            TreeNode(person = sibling, label = "자매", onClick = { onItemClick(IndividualDetail(sibling.id)) })
+                        }
+                    }
+                }
+
+                // 3. 하층: 자녀 세대 박스
+                if (data.children.isNotEmpty()) {
+                    Box(
+                        modifier = Modifier
+                            .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.25f), RoundedCornerShape(16.dp))
+                            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.05f), RoundedCornerShape(16.dp))
+                            .padding(16.dp)
+                    ) {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(24.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            data.children.forEach { child ->
+                                TreeNode(
+                                    person = child,
+                                    label = "자녀",
+                                    onClick = { onItemClick(IndividualDetail(child.id)) }
+                                )
+                            }
+                        }
                     }
                 }
             }
