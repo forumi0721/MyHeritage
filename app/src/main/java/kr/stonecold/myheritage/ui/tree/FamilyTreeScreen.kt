@@ -50,6 +50,8 @@ fun FamilyTreeScreen(
     var offsetX by remember { mutableStateOf(0f) }
     var offsetY by remember { mutableStateOf(0f) }
 
+    var selectedPersonForMenu by remember { mutableStateOf<IndividualEntity?>(null) }
+
     Scaffold(
         topBar = {
             @OptIn(ExperimentalMaterial3Api::class)
@@ -102,7 +104,9 @@ fun FamilyTreeScreen(
                             offsetX += dPan.x
                             offsetY += dPan.y
                         },
-                        onItemClick = onItemClick
+                        onNodeClick = { person ->
+                            selectedPersonForMenu = person
+                        }
                     )
                 }
                 is FamilyTreeUiState.Error -> {
@@ -111,6 +115,36 @@ fun FamilyTreeScreen(
                     }
                 }
             }
+        }
+
+        // 노드 터치 메뉴 팝업 다이얼로그
+        if (selectedPersonForMenu != null) {
+            val person = selectedPersonForMenu!!
+            AlertDialog(
+                onDismissRequest = { selectedPersonForMenu = null },
+                title = { Text(text = "${person.name} 님 선택") },
+                text = { Text(text = "어떤 가계도 작업을 진행하시겠습니까?") },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            onItemClick(FamilyTree(person.id))
+                            selectedPersonForMenu = null
+                        }
+                    ) {
+                        Text("이 인물 기준 가계도 보기")
+                    }
+                },
+                dismissButton = {
+                    TextButton(
+                        onClick = {
+                            onItemClick(IndividualDetail(person.id))
+                            selectedPersonForMenu = null
+                        }
+                    ) {
+                        Text("인물 상세 정보 보기")
+                    }
+                }
+            )
         }
     }
 }
@@ -122,7 +156,7 @@ fun TreeContainer(
     offsetX: Float,
     offsetY: Float,
     onTransform: (Float, Offset) -> Unit,
-    onItemClick: (NavKey) -> Unit
+    onNodeClick: (IndividualEntity) -> Unit
 ) {
     val hasParent = (data.father != null || data.mother != null)
     
@@ -296,14 +330,14 @@ fun TreeContainer(
                                 horizontalArrangement = Arrangement.spacedBy(24.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                TreeNode(person = data.father, label = "부 (아버지)", onClick = { onItemClick(IndividualDetail(data.father.id)) })
-                                TreeNode(person = data.mother, label = "모 (어머니)", onClick = { onItemClick(IndividualDetail(data.mother.id)) })
+                                TreeNode(person = data.father, label = "부 (아버지)", onClick = { onNodeClick(data.father) })
+                                TreeNode(person = data.mother, label = "모 (어머니)", onClick = { onNodeClick(data.mother) })
                             }
                         }
                     } else if (data.father != null) {
-                        TreeNode(person = data.father, label = "부 (아버지)", onClick = { onItemClick(IndividualDetail(data.father.id)) })
+                        TreeNode(person = data.father, label = "부 (아버지)", onClick = { onNodeClick(data.father) })
                     } else if (data.mother != null) {
-                        TreeNode(person = data.mother, label = "모 (어머니)", onClick = { onItemClick(IndividualDetail(data.mother.id)) })
+                        TreeNode(person = data.mother, label = "모 (어머니)", onClick = { onNodeClick(data.mother) })
                     }
                 }
 
@@ -320,7 +354,7 @@ fun TreeContainer(
                     ) {
                         // 형제들 (왼쪽)
                         data.siblings.filter { it.gender == 1 }.forEach { sibling ->
-                            TreeNode(person = sibling, label = "형제", onClick = { onItemClick(IndividualDetail(sibling.id)) })
+                            TreeNode(person = sibling, label = "형제", onClick = { onNodeClick(sibling) })
                         }
 
                         // 본인 부부 결합 그룹 박스
@@ -338,13 +372,13 @@ fun TreeContainer(
                                     person = data.self,
                                     label = "본인",
                                     isRoot = true,
-                                    onClick = { onItemClick(IndividualDetail(data.self.id)) }
+                                    onClick = { onNodeClick(data.self) }
                                 )
                                 data.spouses.forEach { spouse ->
                                     TreeNode(
                                         person = spouse,
                                         label = "배우자",
-                                        onClick = { onItemClick(IndividualDetail(spouse.id)) }
+                                        onClick = { onNodeClick(spouse) }
                                     )
                                 }
                             }
@@ -352,7 +386,7 @@ fun TreeContainer(
 
                         // 자매들 (오른쪽)
                         data.siblings.filter { it.gender == 2 }.forEach { sibling ->
-                            TreeNode(person = sibling, label = "자매", onClick = { onItemClick(IndividualDetail(sibling.id)) })
+                            TreeNode(person = sibling, label = "자매", onClick = { onNodeClick(sibling) })
                         }
                     }
                 }
@@ -373,7 +407,7 @@ fun TreeContainer(
                                 TreeNode(
                                     person = child,
                                     label = "자녀",
-                                    onClick = { onItemClick(IndividualDetail(child.id)) }
+                                    onClick = { onNodeClick(child) }
                                 )
                             }
                         }
