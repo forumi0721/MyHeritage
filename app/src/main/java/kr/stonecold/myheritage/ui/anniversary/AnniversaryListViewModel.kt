@@ -91,9 +91,8 @@ class AnniversaryListViewModel(
     private fun getSolarDateOfThisYear(thisYear: Int, lunarMonth: Int, lunarDay: Int): String {
         return try {
             val cc = ChineseCalendar()
-            // 음력 연도는 서기 연도에서 대략 2637을 더해 갑자 주기를 지정하나, 
-            // ICU ChineseCalendar는 EXTENDED_YEAR 필드에 양력 기준 서기 연도를 바로 주입하여 음력 매핑이 가능함
-            cc.set(IcuCalendar.EXTENDED_YEAR, thisYear)
+            // 음력의 EXTENDED_YEAR는 기원전 2637년(황제 원년) 기점 연속 연도이므로 서기 연도에 2637을 더해 설정
+            cc.set(IcuCalendar.EXTENDED_YEAR, thisYear + 2637)
             cc.set(IcuCalendar.MONTH, lunarMonth - 1) // 0-indexed
             cc.set(IcuCalendar.DAY_OF_MONTH, lunarDay)
             cc.set(IcuCalendar.IS_LEAP_MONTH, 0) // 평달 기본
