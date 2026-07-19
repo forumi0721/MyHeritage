@@ -6,11 +6,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTransformGestures
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Refresh
@@ -48,6 +45,11 @@ fun FamilyTreeScreen(
 
     val state by viewModel.uiState.collectAsStateWithLifecycle()
 
+    // 2D 뷰포트 트랜스폼 상태 (화면 전체 줌/이동)
+    var scale by remember { mutableStateOf(1f) }
+    var offsetX by remember { mutableStateOf(0f) }
+    var offsetY by remember { mutableStateOf(0f) }
+
     Scaffold(
         topBar = {
             @OptIn(ExperimentalMaterial3Api::class)
@@ -59,8 +61,14 @@ fun FamilyTreeScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = { viewModel.loadTreeData() }) {
-                        Icon(imageVector = Icons.Default.Refresh, contentDescription = "새로고침")
+                    IconButton(onClick = { 
+                        viewModel.loadTreeData()
+                        // 새로고침 시 줌 및 화면 위치 원점 복원
+                        scale = 1f
+                        offsetX = 0f
+                        offsetY = 0f
+                    }) {
+                        Icon(imageVector = Icons.Default.Refresh, contentDescription = "새로고침 및 화면 초기화")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -84,7 +92,18 @@ fun FamilyTreeScreen(
                 }
                 is FamilyTreeUiState.Success -> {
                     val data = state as FamilyTreeUiState.Success
-                    TreeContainer(data = data, onItemClick = onItemClick)
+                    TreeContainer(
+                        data = data,
+                        scale = scale,
+                        offsetX = offsetX,
+                        offsetY = offsetY,
+                        onTransform = { dScale, dPan ->
+                            scale = (scale * dScale).coerceIn(0.4f, 2.5f)
+                            offsetX += dPan.x
+                            offsetY += dPan.y
+                        },
+                        onItemClick = onItemClick
+                    )
                 }
                 is FamilyTreeUiState.Error -> {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -99,14 +118,12 @@ fun FamilyTreeScreen(
 @Composable
 fun TreeContainer(
     data: FamilyTreeUiState.Success,
+    scale: Float,
+    offsetX: Float,
+    offsetY: Float,
+    onTransform: (Float, Offset) -> Unit,
     onItemClick: (NavKey) -> Unit
 ) {
-    val horizontalScrollState = rememberScrollState()
-    val verticalScrollState = rememberScrollState()
-    
-    // 확대 축소를 위한 스케일 상태 (기본 1.0, 범위 0.4 ~ 2.5)
-    var scale by remember { mutableStateOf(1f) }
-
     val hasParent = (data.father != null || data.mother != null)
     
     // 세대별 노드 수에 따른 가로폭 계산
@@ -118,27 +135,28 @@ fun TreeContainer(
     val computedWidth = maxOf(900.dp, (maxNodesInRow * 200).dp)
     val computedHeight = if (hasParent) 650.dp else 450.dp
 
-    // 핀치 줌 및 드래그 스크롤이 매끄럽게 어우러지도록 설계
+    // 1D 네이티브 스크롤을 걷어내어 드래그(Pan)와 줌(Zoom) 충돌을 방지하고 자유 2D 이동 구현
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .horizontalScroll(horizontalScrollState)
-            .verticalScroll(verticalScrollState)
             .pointerInput(Unit) {
-                detectTransformGestures { _, _, zoom, _ ->
-                    scale = (scale * zoom).coerceIn(0.4f, 2.5f)
+                detectTransformGestures { _, pan, zoom, _ ->
+                    onTransform(zoom, pan)
                 }
             }
-            .padding(16.dp)
+            .background(MaterialTheme.colorScheme.background),
+        contentAlignment = Alignment.Center // 기본 가계도 판이 화면 중앙 부근에 놓이도록 정렬
     ) {
-        // 확대 축소 스케일이 반영된 줌 전용 컨테이너 Box
+        // 실제 물리 측정 크기(computedWidth, computedHeight)를 항상 고정한 채 그래픽 스케일만 조절하여 텍스트/노드 찌그러짐을 예방
         Box(
             modifier = Modifier
-                .size(computedWidth * scale, computedHeight * scale)
+                .size(computedWidth, computedHeight)
                 .graphicsLayer(
                     scaleX = scale,
                     scaleY = scale,
-                    transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0f, 0f)
+                    translationX = offsetX,
+                    translationY = offsetY,
+                    transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0.5f, 0.5f) // 화면 중앙 기준 트랜스폼
                 )
         ) {
             val lineColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
@@ -235,7 +253,7 @@ fun TreeContainer(
                 }
             }
 
-            // 실제 노드 및 그룹핑 아웃라인 박스 레이아웃
+            // 실제 노드 및 그룹핑 아웃라인 박스 레이아웃 (실측 크기 유지)
             Column(
                 modifier = Modifier.width(computedWidth),
                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -269,7 +287,7 @@ fun TreeContainer(
                 // 2. 중층: 형제, 자매 및 본인 부부 통합 세대 박스
                 Box(
                     modifier = Modifier
-                        .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.25f), RoundedCornerShape(16.dp))
+                        .border(1.5.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.25f), RoundedCornerShape(16.dp))
                         .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.05f), RoundedCornerShape(16.dp))
                         .padding(16.dp)
                 ) {
@@ -285,7 +303,7 @@ fun TreeContainer(
                         // 본인 부부 결합 그룹 박스
                         Box(
                             modifier = Modifier
-                                .border(2.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(12.dp))
+                                .border(2.5.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(12.dp))
                                 .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.06f), RoundedCornerShape(12.dp))
                                 .padding(12.dp)
                         ) {
@@ -320,7 +338,7 @@ fun TreeContainer(
                 if (data.children.isNotEmpty()) {
                     Box(
                         modifier = Modifier
-                            .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.25f), RoundedCornerShape(16.dp))
+                            .border(1.5.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.25f), RoundedCornerShape(16.dp))
                             .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.05f), RoundedCornerShape(16.dp))
                             .padding(16.dp)
                     ) {
