@@ -4,5 +4,6 @@
     android:minHeight="40dp"
     android:updatePeriodMillis="86400000"
     android:initialLayout="@layout/anniversary_widget_dark_4x1"
+    android:previewLayout="@layout/anniversary_widget_dark_4x1"
     android:resizeMode="horizontal"
     android:widgetCategory="home_screen" />
