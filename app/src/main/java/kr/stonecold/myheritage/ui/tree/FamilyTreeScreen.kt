@@ -216,11 +216,29 @@ fun TreeContainer(
                 // 2. 본인 부부 -> 자녀 세대 연결선 (계단식 꺾임 분기선)
                 if (data.children.isNotEmpty()) {
                     val childCount = data.children.size
+                    val hasSpouse = data.spouses.isNotEmpty()
+                    
+                    val ySelfSpouseMid = (ySelfSpouseTop + ySelfSpouseBottom) / 2
+                    val yLineStart = if (hasSpouse) ySelfSpouseMid else ySelfBottom
+                    val xLineStart = xCenter
+
+                    // 배우자가 있는 경우 본인과 배우자를 잇는 수평선 그리기
+                    if (hasSpouse) {
+                        val xSelf = xCenter - 58.5.dp.toPx()
+                        val xSpouse = xCenter + 58.5.dp.toPx()
+                        drawLine(
+                            color = lineColor,
+                            start = Offset(xSelf, ySelfSpouseMid),
+                            end = Offset(xSpouse, ySelfSpouseMid),
+                            strokeWidth = 5f
+                        )
+                    }
+
                     if (childCount == 1) {
                         // 자녀 1명 직통 수직선
                         drawLine(
                             color = lineColor,
-                            start = Offset(xCenter, ySelfBottom),
+                            start = Offset(xLineStart, yLineStart),
                             end = Offset(xCenter, yChildTop),
                             strokeWidth = 5f
                         )
@@ -228,12 +246,12 @@ fun TreeContainer(
                         // 자녀 2명 이상 계단식 분기선 그리기 (93dp 노드 적용)
                         val pitch = 93.dp.toPx() + 24.dp.toPx()
                         val xFirstChild = xCenter - (childCount - 1) * pitch / 2
-                        val yHorizontal = (ySelfBottom + yChildTop) / 2
+                        val yHorizontal = (yLineStart + yChildTop) / 2
                         
-                        // 본인 부부 박스 바닥에서 수평 분기선까지 하강 수직선
+                        // 본인 부부 수평선/바닥에서 수평 분기선까지 하강 수직선
                         drawLine(
                             color = lineColor,
-                            start = Offset(xCenter, ySelfBottom),
+                            start = Offset(xLineStart, yLineStart),
                             end = Offset(xCenter, yHorizontal),
                             strokeWidth = 5f
                         )
