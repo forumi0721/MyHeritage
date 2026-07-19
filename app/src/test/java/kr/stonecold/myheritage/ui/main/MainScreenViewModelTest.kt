@@ -64,4 +64,6 @@ private class FakeMyModelRepository : DataRepository {
     override suspend fun clearDatabase() {}
     override fun backupDatabase(): Boolean = true
     override fun restoreDatabase(): Boolean = true
+    override fun backupDatabaseToUri(uri: android.net.Uri): Boolean = true
+    override fun restoreDatabaseFromUri(uri: android.net.Uri): Boolean = true
 }

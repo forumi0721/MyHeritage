@@ -1,6 +1,7 @@
 package kr.stonecold.myheritage.data
 
 import android.content.Context
+import android.net.Uri
 import kotlinx.coroutines.flow.Flow
 import java.io.File
 import java.io.FileInputStream
@@ -61,6 +62,8 @@ interface DataRepository {
     suspend fun clearDatabase()
     fun backupDatabase(): Boolean
     fun restoreDatabase(): Boolean
+    fun backupDatabaseToUri(uri: Uri): Boolean
+    fun restoreDatabaseFromUri(uri: Uri): Boolean
 }
 
 class DefaultDataRepository(private val context: Context) : DataRepository {
@@ -161,9 +164,49 @@ class DefaultDataRepository(private val context: Context) : DataRepository {
                 dbFile.delete()
             }
             copyFile(backupFile, dbFile)
-            // 다시 데이터베이스를 초기화 및 작동 확인을 위해 DB 재오픈은 Room이 알아서 해 줌
             true
         } catch (e: IOException) {
+            e.printStackTrace()
+            false
+        }
+    }
+
+    override fun backupDatabaseToUri(uri: Uri): Boolean {
+        val dbFile = context.getDatabasePath("myHeritage.db")
+        if (!dbFile.exists()) return false
+
+        return try {
+            context.contentResolver.openOutputStream(uri)?.use { outputStream ->
+                FileInputStream(dbFile).use { inputStream ->
+                    val buffer = ByteArray(1024)
+                    var bytesRead: Int
+                    while (inputStream.read(buffer).also { bytesRead = it } > 0) {
+                        outputStream.write(buffer, 0, bytesRead)
+                    }
+                }
+            }
+            true
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
+        }
+    }
+
+    override fun restoreDatabaseFromUri(uri: Uri): Boolean {
+        val dbFile = context.getDatabasePath("myHeritage.db")
+        return try {
+            database.close() // 데이터베이스 닫기
+            context.contentResolver.openInputStream(uri)?.use { inputStream ->
+                FileOutputStream(dbFile).use { outputStream ->
+                    val buffer = ByteArray(1024)
+                    var bytesRead: Int
+                    while (inputStream.read(buffer).also { bytesRead = it } > 0) {
+                        outputStream.write(buffer, 0, bytesRead)
+                    }
+                }
+            }
+            true
+        } catch (e: Exception) {
             e.printStackTrace()
             false
         }

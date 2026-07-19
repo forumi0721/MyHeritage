@@ -2,6 +2,8 @@ package kr.stonecold.myheritage.ui.settings
 
 import android.content.Context
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -36,6 +38,25 @@ fun SettingsScreen(
     var showBackupDialog by remember { mutableStateOf(false) }
     var showRestoreDialog by remember { mutableStateOf(false) }
     var showClearDialog by remember { mutableStateOf(false) }
+
+    // SAF 파일 저장/오픈 런처 등록
+    val backupLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("application/octet-stream"),
+        onResult = { uri ->
+            if (uri != null) {
+                viewModel.backupDataToUri(uri)
+            }
+        }
+    )
+
+    val restoreLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument(),
+        onResult = { uri ->
+            if (uri != null) {
+                viewModel.restoreDataFromUri(uri)
+            }
+        }
+    )
 
     // 작업 결과 처리
     LaunchedEffect(state) {
@@ -166,7 +187,7 @@ fun SettingsScreen(
                             Text(text = "데이터 백업", fontWeight = FontWeight.Bold, fontSize = 16.sp)
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
-                                text = "가계 데이터를 안전하게 기기 전용 백업 폴더에 저장합니다.",
+                                text = "가계 데이터를 안전하게 지정하신 기기 내 폴더와 파일명으로 저장합니다.",
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -185,7 +206,7 @@ fun SettingsScreen(
                             Text(text = "데이터 복원", fontWeight = FontWeight.Bold, fontSize = 16.sp)
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
-                                text = "기존에 백업된 파일(myHeritage_backup.db)을 불러와 복원합니다. 복원 시 현재 입력 중인 데이터는 지워집니다.",
+                                text = "기기에 백업된 파일(.db)을 직접 골라서 복원합니다. 복원 시 현재 입력 중인 데이터는 지워집니다.",
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -236,11 +257,11 @@ fun SettingsScreen(
         AlertDialog(
             onDismissRequest = { showBackupDialog = false },
             title = { Text("데이터 백업 확인") },
-            text = { Text("가계 정보를 백업 파일로 내보내시겠습니까?") },
+            text = { Text("가계 정보를 지정할 폴더와 파일명으로 내보내시겠습니까?") },
             confirmButton = {
                 TextButton(onClick = {
                     showBackupDialog = false
-                    viewModel.backupData()
+                    backupLauncher.launch("myHeritage_backup.db")
                 }) {
                     Text("예")
                 }
@@ -258,11 +279,11 @@ fun SettingsScreen(
         AlertDialog(
             onDismissRequest = { showRestoreDialog = false },
             title = { Text("데이터 복원 경고") },
-            text = { Text("백업 정보를 복원하게 되면 현재 입력된 데이터는 삭제되고 이전 백업 상태로 덮어씌워집니다. 진행하시겠습니까?") },
+            text = { Text("백업 정보를 복원하게 되면 현재 입력된 데이터는 삭제되고 이전 백업 상태로 덮어씌워집니다. 복원할 백업 파일을 고르시겠습니까?") },
             confirmButton = {
                 TextButton(onClick = {
                     showRestoreDialog = false
-                    viewModel.restoreData()
+                    restoreLauncher.launch(arrayOf("*/*"))
                 }) {
                     Text("복원 진행")
                 }
