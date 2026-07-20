@@ -3,7 +3,6 @@ package kr.stonecold.myheritage.ui.individual
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kr.stonecold.myheritage.data.DataRepository
-import kr.stonecold.myheritage.data.FactEntity
 import kr.stonecold.myheritage.data.IndividualEntity
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -25,22 +24,19 @@ class EditIndividualViewModel(
     private fun loadIndividual() {
         viewModelScope.launch {
             try {
-                // 관계 설정을 위해 등록된 모든 인물 목록 로드
                 val allIndividuals = repository.getAllIndividualsDirect()
-                
+
                 if (personId == -1L) {
                     _uiState.value = EditIndividualUiState.Success(
                         name = "",
                         alias = "",
                         gender = 1,
-                        contactId = -1,
+                        contactId = -1L,
                         relation = 0,
-                        relativeId = -1,
+                        relativeId = -1L,
                         kind = 0,
-                        familyIdSpouse = -1,
-                        familyIdChild = -1,
-                        birthDateCode = 0L,
-                        birthDateType = 0,
+                        familyIdSpouse = -1L,
+                        familyIdChild = -1L,
                         individuals = allIndividuals,
                         facts = emptyList(),
                         isNew = true
@@ -48,11 +44,8 @@ class EditIndividualViewModel(
                 } else {
                     val person = repository.getIndividualById(personId)
                     if (person != null) {
-                        // 출생 팩트(type = 3) 조회
-                        val birthFact = repository.getFactByPossessIdAndType("IND_$personId", 3)
-                        // 모든 연관 팩트 조회
                         val facts = repository.getFactsByPossessId("IND_$personId")
-                        
+
                         _uiState.value = EditIndividualUiState.Success(
                             name = person.name,
                             alias = person.alias ?: "",
@@ -63,9 +56,7 @@ class EditIndividualViewModel(
                             kind = person.kind,
                             familyIdSpouse = person.familyIdSpouse,
                             familyIdChild = person.familyIdChild,
-                            birthDateCode = birthFact?.startDate ?: 0L,
-                            birthDateType = birthFact?.dateType ?: 0,
-                            individuals = allIndividuals.filter { it.id != personId }, // 본인은 제외
+                            individuals = allIndividuals.filter { it.id != personId },
                             facts = facts,
                             isNew = false
                         )
@@ -85,18 +76,16 @@ class EditIndividualViewModel(
         gender: Int,
         relativeId: Long,
         relation: Int,
-        birthDateCode: Long,
-        birthDateType: Int,
         onSuccess: () -> Unit
     ) {
         val state = uiState.value
         if (state is EditIndividualUiState.Success) {
             viewModelScope.launch {
                 val entity = IndividualEntity(
-                    id = if (state.isNew) 0 else personId,
+                    id = if (state.isNew) 0L else personId,
+                    gender = gender,
                     name = name.trim(),
                     alias = alias.trim().ifEmpty { null },
-                    gender = gender,
                     contactId = state.contactId,
                     relation = relation,
                     relativeId = relativeId,
@@ -106,40 +95,14 @@ class EditIndividualViewModel(
                     familyIdChild = state.familyIdChild
                 )
 
-                val savedId = if (state.isNew) {
+                if (state.isNew) {
                     val allInds = repository.getAllIndividualsDirect()
                     val targetKind = if (allInds.isEmpty()) -1 else state.kind
                     repository.insertIndividual(entity.copy(kind = targetKind))
                 } else {
                     repository.updateIndividual(entity)
-                    personId
                 }
 
-                // 출생일 저장 처리 (birthDateCode > 0 인 경우)
-                if (birthDateCode > 0) {
-                    val possessId = "IND_$savedId"
-                    val existingBirth = repository.getFactByPossessIdAndType(possessId, 3)
-                    
-                    val birthFact = FactEntity(
-                        id = existingBirth?.id ?: 0L,
-                        possessId = possessId,
-                        type = 3, // 3: 출생
-                        label = "출생",
-                        startDate = birthDateCode,
-                        dateType = birthDateType,
-                        isRepeated = 1, // 1: 안함 (생일은 고정 생애이벤트)
-                        place = existingBirth?.place,
-                        description = existingBirth?.description,
-                        lastModified = System.currentTimeMillis()
-                    )
-
-                    if (existingBirth != null) {
-                        repository.updateFact(birthFact)
-                    } else {
-                        repository.insertFact(birthFact)
-                    }
-                }
-                
                 onSuccess()
             }
         }
@@ -159,10 +122,8 @@ sealed interface EditIndividualUiState {
         val kind: Int,
         val familyIdSpouse: Long,
         val familyIdChild: Long,
-        val birthDateCode: Long,
-        val birthDateType: Int,
         val individuals: List<IndividualEntity>,
-        val facts: List<FactEntity>,
+        val facts: List<kr.stonecold.myheritage.data.FactEntity>,
         val isNew: Boolean
     ) : EditIndividualUiState
 }

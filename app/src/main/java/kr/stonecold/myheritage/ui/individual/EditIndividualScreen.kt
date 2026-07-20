@@ -6,11 +6,10 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Done
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -19,14 +18,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation3.runtime.NavKey
 import kr.stonecold.myheritage.*
-import kr.stonecold.myheritage.data.FactEntity
 
 @Composable
 fun EditIndividualScreen(
@@ -51,7 +48,7 @@ fun EditIndividualScreen(
                 title = { Text(if (personId == -1L) "인물 등록" else "인물 정보 수정") },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
-                        Icon(imageVector = Icons.Default.ArrowBack, contentDescription = "뒤로가기")
+                        Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "뒤로가기")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -79,7 +76,7 @@ fun EditIndividualScreen(
                         data = successData,
                         personId = personId,
                         onItemClick = onItemClick,
-                        onSave = { name, alias, gender, relativeId, relation, birthDateCode, birthDateType ->
+                        onSave = { name, alias, gender, relativeId, relation ->
                             if (name.isBlank()) {
                                 Toast.makeText(context, "이름을 입력해주세요.", Toast.LENGTH_SHORT).show()
                             } else {
@@ -88,9 +85,7 @@ fun EditIndividualScreen(
                                     alias = alias,
                                     gender = gender,
                                     relativeId = relativeId,
-                                    relation = relation,
-                                    birthDateCode = birthDateCode,
-                                    birthDateType = birthDateType
+                                    relation = relation
                                 ) {
                                     Toast.makeText(context, "저장되었습니다.", Toast.LENGTH_SHORT).show()
                                     onSuccess()
@@ -114,9 +109,8 @@ fun EditForm(
     data: EditIndividualUiState.Success,
     personId: Long,
     onItemClick: (NavKey) -> Unit,
-    onSave: (String, String, Int, Long, Int, Long, Int) -> Unit
+    onSave: (String, String, Int, Long, Int) -> Unit
 ) {
-    val context = LocalContext.current
     var name by remember { mutableStateOf(data.name) }
     var alias by remember { mutableStateOf(data.alias) }
     var gender by remember { mutableStateOf(data.gender) } // 1: 남성, 2: 여성
@@ -124,22 +118,6 @@ fun EditForm(
     // 관계 설정 필드
     var relativeId by remember { mutableStateOf(data.relativeId) }
     var relation by remember { mutableStateOf(data.relation) }
-
-    // 생년월일 필드
-    var birthYear by remember { mutableStateOf("") }
-    var birthMonth by remember { mutableStateOf("") }
-    var birthDay by remember { mutableStateOf("") }
-    var birthDateType by remember { mutableStateOf(data.birthDateType) } // 0: 양력, 1: 음력
-
-    // 기존 출생일 파싱
-    LaunchedEffect(data.birthDateCode) {
-        val dateVal = data.birthDateCode
-        if (dateVal in 10000000..99991231) {
-            birthYear = (dateVal / 10000).toString()
-            birthMonth = ((dateVal % 10000) / 100).toString()
-            birthDay = (dateVal % 100).toString()
-        }
-    }
 
     var showRelativeMenu by remember { mutableStateOf(false) }
     var showRelationMenu by remember { mutableStateOf(false) }
@@ -267,63 +245,7 @@ fun EditForm(
             }
         }
 
-        HorizontalDivider()
-        Text("출생일 등록 (생일 기념일 자동 생성)", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                RadioButton(selected = (birthDateType == 0), onClick = { birthDateType = 0 })
-                Text("양력", modifier = Modifier.padding(start = 4.dp))
-            }
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                RadioButton(selected = (birthDateType == 1), onClick = { birthDateType = 1 })
-                Text("음력", modifier = Modifier.padding(start = 4.dp))
-            }
-        }
-
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            OutlinedTextField(
-                value = birthYear,
-                onValueChange = { input ->
-                    val filtered = input.filter { it.isDigit() }
-                    if (filtered.length <= 4) birthYear = filtered
-                },
-                label = { Text("년") },
-                placeholder = { Text("YYYY") },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                modifier = Modifier.weight(1.2f)
-            )
-            OutlinedTextField(
-                value = birthMonth,
-                onValueChange = { input ->
-                    val filtered = input.filter { it.isDigit() }
-                    if (filtered.length <= 2) birthMonth = filtered
-                },
-                label = { Text("월") },
-                placeholder = { Text("MM") },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                modifier = Modifier.weight(0.9f)
-            )
-            OutlinedTextField(
-                value = birthDay,
-                onValueChange = { input ->
-                    val filtered = input.filter { it.isDigit() }
-                    if (filtered.length <= 2) birthDay = filtered
-                },
-                label = { Text("일") },
-                placeholder = { Text("DD") },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                modifier = Modifier.weight(0.9f)
-            )
-        }
-
-        // 등록된 다른 기념일 목록 및 [+] 추가 기능 구현 (수정 모드일 때만 노출)
+        // 등록된 기념일 목록 및 [+] 추가 기능 구현 (수정 모드일 때만 노출)
         if (!data.isNew) {
             HorizontalDivider()
             Row(
@@ -332,26 +254,25 @@ fun EditForm(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "등록된 기념일 목록", 
-                    style = MaterialTheme.typography.titleMedium, 
-                    fontWeight = FontWeight.Bold, 
+                    text = "등록된 생애 기록 및 기념일 목록",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary
                 )
                 IconButton(onClick = { onItemClick(EditFact(-1L, "IND_$personId")) }) {
                     Icon(imageVector = Icons.Default.Add, contentDescription = "기념일 추가")
                 }
             }
-            
-            // 출생 팩트(type = 3)를 제외한 나머지 팩트 리스트 출력
-            val otherFacts = data.facts.filter { it.type != 3 }
-            if (otherFacts.isEmpty()) {
+
+            val allFacts = data.facts
+            if (allFacts.isEmpty()) {
                 Text(
-                    text = "등록된 다른 기념일이 없습니다. 우측 [+] 버튼을 눌러 결혼, 회갑 등의 기념일을 추가해보세요.", 
-                    style = MaterialTheme.typography.bodyMedium, 
+                    text = "등록된 기념일이나 생애 기록이 없습니다. 우측 [+] 버튼을 눌러 출생, 사망, 결혼 등의 기념일을 추가해보세요.",
+                    style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             } else {
-                otherFacts.forEach { fact ->
+                allFacts.forEach { fact ->
                     val dateStr = formatLongDate(fact.startDate)
                     val calendarTypeStr = if (fact.dateType == 1) " (음력)" else " (양력)"
                     Card(
@@ -375,26 +296,7 @@ fun EditForm(
 
         Button(
             onClick = {
-                val y = birthYear.toIntOrNull() ?: 0
-                val m = birthMonth.toIntOrNull() ?: 0
-                val d = birthDay.toIntOrNull() ?: 0
-                
-                // 생년월일을 적기 시작했을 때 유효성 검증
-                val hasAnyDateInput = birthYear.isNotBlank() || birthMonth.isNotBlank() || birthDay.isNotBlank()
-                if (hasAnyDateInput) {
-                    if (y !in 1000..9999 || m !in 1..12 || d !in 1..31) {
-                        Toast.makeText(context, "유효한 생년월일(년: 1000~9999, 월: 1~12, 일: 1~31)을 입력해주세요.", Toast.LENGTH_SHORT).show()
-                        return@Button
-                    }
-                }
-
-                val birthCode = if (y > 0 && m > 0 && d > 0) {
-                    (y * 10000 + m * 100 + d).toLong()
-                } else {
-                    0L
-                }
-
-                onSave(name, alias, gender, relativeId, relation, birthCode, birthDateType)
+                onSave(name, alias, gender, relativeId, relation)
             },
             modifier = Modifier
                 .fillMaxWidth()
