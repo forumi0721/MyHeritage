@@ -204,7 +204,9 @@ open class BaseAnniversaryAppWidgetProvider(
             pCandidate.fact.possessId.substring(4).toLongOrNull() ?: -1L
         } else -1L
         val pPerson = indMap[pPersonId]
-        val pPersonName = pPerson?.name ?: "가족"
+        val pPersonName = if (pPerson != null) {
+            if (!pPerson.alias.isNullOrBlank()) "${pPerson.name}(${pPerson.alias})" else pPerson.name
+        } else "가족"
         val pDdayStr = if (pCandidate.diffDays == 0) "D-Day" else "D-${pCandidate.diffDays}"
         val pTitleStr = "$pPersonName 님의 ${pCandidate.virtualLabel}"
         
@@ -229,7 +231,9 @@ open class BaseAnniversaryAppWidgetProvider(
                 sCandidate.fact.possessId.substring(4).toLongOrNull() ?: -1L
             } else -1L
             val sPerson = indMap[sPersonId]
-            val sPersonName = sPerson?.name ?: "가족"
+            val sPersonName = if (sPerson != null) {
+                if (!sPerson.alias.isNullOrBlank()) "${sPerson.name}(${sPerson.alias})" else sPerson.name
+            } else "가족"
             val sDdayStr = if (sCandidate.diffDays == 0) "D-Day" else "D-${sCandidate.diffDays}"
             val sTitleStr = "$sPersonName 님의 ${sCandidate.virtualLabel}"
             

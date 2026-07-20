@@ -40,7 +40,7 @@ class AnniversaryNotificationWorker(
                 } else -1L
 
                 val person = indMap[personId] ?: continue
-                val personName = person.name
+                val personName = if (!person.alias.isNullOrBlank()) "${person.name}(${person.alias})" else person.name
                 val dateVal = fact.startDate
                 val isLunar = fact.dateType == 1
 
