@@ -286,3 +286,31 @@ class AnniversaryAppWidgetProvider : BaseAnniversaryAppWidgetProvider(R.layout.a
         }
     }
 }
+
+fun updateAllWidgets(context: Context) {
+    try {
+        val appWidgetManager = AppWidgetManager.getInstance(context)
+
+        val lightComponent = ComponentName(context, AnniversaryAppWidgetProvider::class.java)
+        val lightIds = appWidgetManager.getAppWidgetIds(lightComponent)
+        if (lightIds.isNotEmpty()) {
+            val intent = Intent(context, AnniversaryAppWidgetProvider::class.java).apply {
+                action = AppWidgetManager.ACTION_APPWIDGET_UPDATE
+                putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, lightIds)
+            }
+            context.sendBroadcast(intent)
+        }
+
+        val darkComponent = ComponentName(context, AnniversaryDarkAppWidgetProvider::class.java)
+        val darkIds = appWidgetManager.getAppWidgetIds(darkComponent)
+        if (darkIds.isNotEmpty()) {
+            val intent = Intent(context, AnniversaryDarkAppWidgetProvider::class.java).apply {
+                action = AppWidgetManager.ACTION_APPWIDGET_UPDATE
+                putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, darkIds)
+            }
+            context.sendBroadcast(intent)
+        }
+    } catch (e: Exception) {
+        e.printStackTrace()
+    }
+}

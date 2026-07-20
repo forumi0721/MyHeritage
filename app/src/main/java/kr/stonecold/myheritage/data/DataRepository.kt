@@ -85,18 +85,18 @@ class DefaultDataRepository(private val context: Context) : DataRepository {
     override suspend fun getIndividualsByRelation(relativeId: Long, relation: Int): List<IndividualEntity> = individualDao.getByRelation(relativeId, relation)
     override suspend fun getIndividualsByFamilyIdChild(familyId: Long): List<IndividualEntity> = individualDao.getByFamilyIdChild(familyId)
     override suspend fun getSiblings(familyIdChild: Long, excludeId: Long): List<IndividualEntity> = individualDao.getSiblings(familyIdChild, excludeId)
-    override suspend fun insertIndividual(individual: IndividualEntity): Long = individualDao.insert(individual)
-    override suspend fun updateIndividual(individual: IndividualEntity): Int = individualDao.update(individual)
-    override suspend fun deleteIndividual(individual: IndividualEntity): Int = individualDao.delete(individual)
+    override suspend fun insertIndividual(individual: IndividualEntity): Long = individualDao.insert(individual).also { notifyWidgetUpdate() }
+    override suspend fun updateIndividual(individual: IndividualEntity): Int = individualDao.update(individual).also { notifyWidgetUpdate() }
+    override suspend fun deleteIndividual(individual: IndividualEntity): Int = individualDao.delete(individual).also { notifyWidgetUpdate() }
 
     // Family
     override fun getAllFamilies(): Flow<List<FamilyEntity>> = familyDao.getAllByKind()
     override suspend fun getFamilyById(id: Long): FamilyEntity? = familyDao.getById(id)
     override fun getFamilyByIdFlow(id: Long): Flow<FamilyEntity?> = familyDao.getByIdFlow(id)
     override suspend fun getSpouseFamilies(personId: Long, excludeFamilyId: Long): List<FamilyEntity> = familyDao.getSpouseFamilies(personId, excludeFamilyId)
-    override suspend fun insertFamily(family: FamilyEntity): Long = familyDao.insert(family)
-    override suspend fun updateFamily(family: FamilyEntity): Int = familyDao.update(family)
-    override suspend fun deleteFamily(family: FamilyEntity): Int = familyDao.delete(family)
+    override suspend fun insertFamily(family: FamilyEntity): Long = familyDao.insert(family).also { notifyWidgetUpdate() }
+    override suspend fun updateFamily(family: FamilyEntity): Int = familyDao.update(family).also { notifyWidgetUpdate() }
+    override suspend fun deleteFamily(family: FamilyEntity): Int = familyDao.delete(family).also { notifyWidgetUpdate() }
 
     // Facts
     override fun getAllFactsFlow(): Flow<List<FactEntity>> = factDao.getAllFactsFlow()
@@ -105,9 +105,9 @@ class DefaultDataRepository(private val context: Context) : DataRepository {
     override fun getFactsByPossessIdFlow(possessId: String): Flow<List<FactEntity>> = factDao.getByPossessIdFlow(possessId)
     override suspend fun getFactById(id: Long): FactEntity? = factDao.getById(id)
     override suspend fun getFactByPossessIdAndType(possessId: String, type: Int): FactEntity? = factDao.getByPossessIdAndType(possessId, type)
-    override suspend fun insertFact(fact: FactEntity): Long = factDao.insert(fact)
-    override suspend fun updateFact(fact: FactEntity): Int = factDao.update(fact)
-    override suspend fun deleteFact(fact: FactEntity): Int = factDao.delete(fact)
+    override suspend fun insertFact(fact: FactEntity): Long = factDao.insert(fact).also { notifyWidgetUpdate() }
+    override suspend fun updateFact(fact: FactEntity): Int = factDao.update(fact).also { notifyWidgetUpdate() }
+    override suspend fun deleteFact(fact: FactEntity): Int = factDao.delete(fact).also { notifyWidgetUpdate() }
 
     // Notes
     override fun getNotesByPossessId(possessId: String): Flow<List<NoteEntity>> = noteDao.getByPossessId(possessId)
@@ -128,6 +128,7 @@ class DefaultDataRepository(private val context: Context) : DataRepository {
     // Database Utilities
     override suspend fun clearDatabase() = withContext(Dispatchers.IO) {
         database.clearAllTables()
+        notifyWidgetUpdate()
     }
 
     override fun backupDatabase(): Boolean {
@@ -181,6 +182,7 @@ class DefaultDataRepository(private val context: Context) : DataRepository {
 
             // 4. 새로운 데이터베이스 커넥션 기동
             MyHeritageDatabase.getDatabase(context)
+            notifyWidgetUpdate()
             true
         } catch (e: IOException) {
             e.printStackTrace()
@@ -240,6 +242,7 @@ class DefaultDataRepository(private val context: Context) : DataRepository {
 
             // 4. 새로운 데이터베이스 커넥션 기동
             MyHeritageDatabase.getDatabase(context)
+            notifyWidgetUpdate()
             true
         } catch (e: Exception) {
             e.printStackTrace()
@@ -266,6 +269,14 @@ class DefaultDataRepository(private val context: Context) : DataRepository {
                     // checkpoint success
                 }
             }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    private fun notifyWidgetUpdate() {
+        try {
+            kr.stonecold.myheritage.widget.updateAllWidgets(context)
         } catch (e: Exception) {
             e.printStackTrace()
         }
