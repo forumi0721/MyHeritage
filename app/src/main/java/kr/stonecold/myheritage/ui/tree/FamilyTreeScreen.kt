@@ -9,7 +9,7 @@ import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -59,7 +59,7 @@ fun FamilyTreeScreen(
                 title = { Text("가계도 트리") },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
-                        Icon(imageVector = Icons.Default.ArrowBack, contentDescription = "뒤로가기")
+                        Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "뒤로가기")
                     }
                 },
                 actions = {
@@ -330,14 +330,14 @@ fun TreeContainer(
                                 horizontalArrangement = Arrangement.spacedBy(24.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                TreeNode(person = data.father, label = "부 (아버지)", onClick = { onNodeClick(data.father) })
-                                TreeNode(person = data.mother, label = "모 (어머니)", onClick = { onNodeClick(data.mother) })
+                                TreeNode(person = data.father, label = "부 (아버지)", ageText = data.ageMap[data.father.id], onClick = { onNodeClick(data.father) })
+                                TreeNode(person = data.mother, label = "모 (어머니)", ageText = data.ageMap[data.mother.id], onClick = { onNodeClick(data.mother) })
                             }
                         }
                     } else if (data.father != null) {
-                        TreeNode(person = data.father, label = "부 (아버지)", onClick = { onNodeClick(data.father) })
+                        TreeNode(person = data.father, label = "부 (아버지)", ageText = data.ageMap[data.father.id], onClick = { onNodeClick(data.father) })
                     } else if (data.mother != null) {
-                        TreeNode(person = data.mother, label = "모 (어머니)", onClick = { onNodeClick(data.mother) })
+                        TreeNode(person = data.mother, label = "모 (어머니)", ageText = data.ageMap[data.mother.id], onClick = { onNodeClick(data.mother) })
                     }
                 }
 
@@ -354,7 +354,7 @@ fun TreeContainer(
                     ) {
                         // 형제들 (왼쪽)
                         data.siblings.filter { it.gender == 1 }.forEach { sibling ->
-                            TreeNode(person = sibling, label = "형제", onClick = { onNodeClick(sibling) })
+                            TreeNode(person = sibling, label = "형제", ageText = data.ageMap[sibling.id], onClick = { onNodeClick(sibling) })
                         }
 
                         // 본인 부부 결합 그룹 박스
@@ -371,6 +371,7 @@ fun TreeContainer(
                                 TreeNode(
                                     person = data.self,
                                     label = "본인",
+                                    ageText = data.ageMap[data.self.id],
                                     isRoot = true,
                                     onClick = { onNodeClick(data.self) }
                                 )
@@ -378,6 +379,7 @@ fun TreeContainer(
                                     TreeNode(
                                         person = spouse,
                                         label = "배우자",
+                                        ageText = data.ageMap[spouse.id],
                                         onClick = { onNodeClick(spouse) }
                                     )
                                 }
@@ -386,7 +388,7 @@ fun TreeContainer(
 
                         // 자매들 (오른쪽)
                         data.siblings.filter { it.gender == 2 }.forEach { sibling ->
-                            TreeNode(person = sibling, label = "자매", onClick = { onNodeClick(sibling) })
+                            TreeNode(person = sibling, label = "자매", ageText = data.ageMap[sibling.id], onClick = { onNodeClick(sibling) })
                         }
                     }
                 }
@@ -407,6 +409,7 @@ fun TreeContainer(
                                 TreeNode(
                                     person = child,
                                     label = "자녀",
+                                    ageText = data.ageMap[child.id],
                                     onClick = { onNodeClick(child) }
                                 )
                             }
@@ -422,6 +425,7 @@ fun TreeContainer(
 fun TreeNode(
     person: IndividualEntity,
     label: String,
+    ageText: String? = null,
     isRoot: Boolean = false,
     onClick: () -> Unit
 ) {
@@ -429,9 +433,11 @@ fun TreeNode(
     val borderColor = if (isRoot) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
     val borderWidth = if (isRoot) 2.dp else 1.dp
 
+    val displayLabel = if (!ageText.isNullOrBlank()) "$label · $ageText" else label
+
     Box(
         modifier = Modifier
-            .requiredSize(93.dp, 53.dp) // 카드 뭉개짐(찌그러짐)을 원천 방지하기 위해 requiredSize 지정
+            .requiredSize(93.dp, 53.dp)
             .background(genderColor, shape = RoundedCornerShape(6.dp))
             .border(borderWidth, borderColor, shape = RoundedCornerShape(6.dp))
             .clickable { onClick() }
@@ -442,16 +448,16 @@ fun TreeNode(
             Text(
                 text = person.name,
                 fontWeight = FontWeight.Bold,
-                fontSize = 11.sp, // 축소된 크기에 맞게 가나다 가독 비율 축소
+                fontSize = 11.sp,
                 color = Color.Black,
                 textAlign = TextAlign.Center,
                 maxLines = 1
             )
             Spacer(modifier = Modifier.height(1.dp))
             Text(
-                text = label,
+                text = displayLabel,
                 fontSize = 8.sp,
-                color = Color.DarkGray,
+                color = if (ageText?.contains("별세") == true) Color(0xFFC62828) else Color.DarkGray,
                 fontWeight = FontWeight.SemiBold,
                 maxLines = 1
             )

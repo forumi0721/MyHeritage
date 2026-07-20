@@ -4,9 +4,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kr.stonecold.myheritage.data.DataRepository
 import kr.stonecold.myheritage.data.IndividualEntity
+import kr.stonecold.myheritage.util.AgeCalculator
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 class FamilyTreeViewModel(
@@ -58,26 +60,27 @@ class FamilyTreeViewModel(
                 var spouses = emptyList<IndividualEntity>()
                 var children = emptyList<IndividualEntity>()
 
-                // 본인이 남편 또는 아내로 들어가 있는 모든 가족을 구함
                 val spouseFamilies = repository.getSpouseFamilies(self.id, -1L)
                 if (spouseFamilies.isNotEmpty()) {
                     val spouseIds = mutableListOf<Long>()
-                    val childIds = mutableListOf<Long>()
-                    
                     spouseFamilies.forEach { fam ->
                         val spouseId = if (self.gender == 1) fam.wifeId else fam.husbandId
                         if (spouseId != -1L) spouseIds.add(spouseId)
-                        
-                        // 자녀들 ID 조회
-                        val famChildren = repository.getIndividualsByRelativeId(fam.id) // relative_id가 family_id 매핑인 경우 대응
-                        // 또는 family_id_child 외래키 매핑에 해당하는 자녀들을 구함
-                        val childList = repository.getIndividualsByRelation(fam.id, 0) // relation 등으로 매핑
-                        // 안전하게 family_id_child가 이 가족 ID인 자녀들을 직접 레포지토리로 가져옴
                         val directChildren = repository.getIndividualsByFamilyIdChild(fam.id)
                         children = children + directChildren
                     }
-
                     spouses = spouseIds.mapNotNull { repository.getIndividualById(it) }
+                }
+
+                // 나이 정보 연산을 위해 전체 팩트 로드
+                val allFacts = repository.getAllFactsFlow().first()
+                val factGroup = allFacts.groupBy { it.possessId }
+
+                val allPersons = listOfNotNull(self, father, mother) + siblings + spouses + children
+                val ageMap = allPersons.associate { ind ->
+                    val facts = factGroup["IND_${ind.id}"] ?: emptyList()
+                    val ageInfo = AgeCalculator.calculateAgeInfo(facts)
+                    ind.id to ageInfo.ageText
                 }
 
                 _uiState.value = FamilyTreeUiState.Success(
@@ -86,7 +89,8 @@ class FamilyTreeViewModel(
                     mother = mother,
                     siblings = siblings,
                     spouses = spouses,
-                    children = children
+                    children = children,
+                    ageMap = ageMap
                 )
             } catch (e: Exception) {
                 _uiState.value = FamilyTreeUiState.Error(e)
@@ -104,6 +108,7 @@ sealed interface FamilyTreeUiState {
         val mother: IndividualEntity?,
         val siblings: List<IndividualEntity>,
         val spouses: List<IndividualEntity>,
-        val children: List<IndividualEntity>
+        val children: List<IndividualEntity>,
+        val ageMap: Map<Long, String?> = emptyMap()
     ) : FamilyTreeUiState
 }

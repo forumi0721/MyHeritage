@@ -4,7 +4,9 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -42,7 +44,7 @@ fun IndividualListScreen(
                 title = { Text("인물 목록") },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
-                        Icon(imageVector = Icons.Default.ArrowBack, contentDescription = "뒤로가기")
+                        Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "뒤로가기")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -90,12 +92,12 @@ fun IndividualListScreen(
                             modifier = Modifier.fillMaxSize(),
                             contentPadding = PaddingValues(bottom = 80.dp)
                         ) {
-                            items(list) { person ->
+                            items(list) { item ->
                                 IndividualItem(
-                                    person = person,
-                                    onItemClick = { onItemClick(IndividualDetail(person.id)) },
-                                    onEditClick = { onItemClick(EditIndividual(person.id)) },
-                                    onTreeClick = { onItemClick(FamilyTree(person.id)) }
+                                    item = item,
+                                    onItemClick = { onItemClick(IndividualDetail(item.individual.id)) },
+                                    onEditClick = { onItemClick(EditIndividual(item.individual.id)) },
+                                    onTreeClick = { onItemClick(FamilyTree(item.individual.id)) }
                                 )
                                 HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                             }
@@ -114,11 +116,12 @@ fun IndividualListScreen(
 
 @Composable
 fun IndividualItem(
-    person: kr.stonecold.myheritage.data.IndividualEntity,
+    item: IndividualListItem,
     onItemClick: () -> Unit,
     onEditClick: () -> Unit,
     onTreeClick: () -> Unit
 ) {
+    val person = item.individual
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -139,11 +142,29 @@ fun IndividualItem(
         Spacer(modifier = Modifier.width(16.dp))
         
         Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = person.name,
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = person.name,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                if (!item.ageText.isNullOrBlank()) {
+                    Spacer(modifier = Modifier.width(8.dp))
+                    val isDeceased = item.ageText.contains("별세")
+                    Surface(
+                        color = if (isDeceased) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.tertiaryContainer,
+                        shape = RoundedCornerShape(4.dp)
+                    ) {
+                        Text(
+                            text = item.ageText,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = if (isDeceased) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onTertiaryContainer,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                        )
+                    }
+                }
+            }
             if (!person.alias.isNullOrBlank()) {
                 Text(
                     text = "호칭: ${person.alias}",
@@ -153,12 +174,13 @@ fun IndividualItem(
             }
         }
 
-        // 바로가기 버튼들
-        IconButton(onClick = onTreeClick) {
-            Icon(imageVector = Icons.Default.Share, contentDescription = "가계도", tint = MaterialTheme.colorScheme.secondary)
-        }
-        IconButton(onClick = onEditClick) {
-            Icon(imageVector = Icons.Default.Edit, contentDescription = "편집", tint = MaterialTheme.colorScheme.outline)
+        Row {
+            IconButton(onClick = onTreeClick) {
+                Icon(imageVector = Icons.Default.AccountTree, contentDescription = "가계도 보기", tint = MaterialTheme.colorScheme.primary)
+            }
+            IconButton(onClick = onEditClick) {
+                Icon(imageVector = Icons.Default.Edit, contentDescription = "수정", tint = MaterialTheme.colorScheme.outline)
+            }
         }
     }
 }
