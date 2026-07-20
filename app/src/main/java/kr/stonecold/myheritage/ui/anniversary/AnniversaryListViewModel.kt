@@ -114,39 +114,6 @@ class AnniversaryListViewModel(
                 upcomingDiffMillis = diffMillis
             )
             resultList.add(mainItem)
-
-            // 2. 만약 구분 라벨이 "사망" 이고 매년 반복 지정된 경우에만 "제사 (기일 하루 전)" 가상 일정 자동 산출 추가
-            if (fact.label?.trim() == "사망" && fact.isRepeated == 0) {
-                val prevOriginalDateStr = getPrevDateStr(dateVal)
-
-                val jesaCal = targetCal.clone() as Calendar
-                jesaCal.add(Calendar.DAY_OF_MONTH, -1)
-                val jM = jesaCal.get(Calendar.MONTH) + 1
-                val jD = jesaCal.get(Calendar.DAY_OF_MONTH)
-                val jesaSolarDateStr = "${jesaCal.get(Calendar.YEAR)}년 ${jM}월 ${jD}일"
-                val jMonthDayVal = jM * 100 + jD
-
-                var jUpcomingCal = jesaCal.clone() as Calendar
-                if (jUpcomingCal.timeInMillis < todayCal.timeInMillis) {
-                    jUpcomingCal.add(Calendar.YEAR, 1)
-                }
-                val jDiffMillis = jUpcomingCal.timeInMillis - todayCal.timeInMillis
-
-                val jesaItem = AnniversaryUiItem(
-                    id = fact.id + 100000L,
-                    label = "제사",
-                    originalDateStr = prevOriginalDateStr,
-                    thisYearSolarDateStr = jesaSolarDateStr,
-                    personName = personName,
-                    possessId = fact.possessId,
-                    dateType = fact.dateType,
-                    isRepeated = 0,
-                    originalDateVal = dateVal - 1, // 하루 전 수치화
-                    thisYearSolarMonthDay = jMonthDayVal,
-                    upcomingDiffMillis = jDiffMillis
-                )
-                resultList.add(jesaItem)
-            }
         }
 
         // 정렬 적용
@@ -185,26 +152,5 @@ class AnniversaryListViewModel(
             cal.set(Calendar.DAY_OF_MONTH, day)
         }
         return cal
-    }
-
-    private fun getPrevDateStr(dateVal: Long): String {
-        return try {
-            val cal = Calendar.getInstance()
-            if (dateVal in 10000000..99991231) {
-                val y = (dateVal / 10000).toInt()
-                val m = ((dateVal % 10000) / 100).toInt()
-                val d = (dateVal % 100).toInt()
-                cal.set(y, m - 1, d)
-            } else {
-                cal.timeInMillis = dateVal
-            }
-            cal.add(Calendar.DAY_OF_MONTH, -1)
-            val yr = cal.get(Calendar.YEAR)
-            val mt = cal.get(Calendar.MONTH) + 1
-            val dy = cal.get(Calendar.DAY_OF_MONTH)
-            "${yr}년 ${mt}월 ${dy}일"
-        } catch (e: Exception) {
-            "하루 전 계산 불가"
-        }
     }
 }

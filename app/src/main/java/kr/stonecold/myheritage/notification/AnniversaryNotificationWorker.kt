@@ -71,25 +71,6 @@ class AnniversaryNotificationWorker(
                         NotificationHelper.sendNotification(applicationContext, (fact.id + 50000L).toInt(), title, message)
                     }
                 }
-
-                // 2. 가상 제사 일정 (사망 + isRepeated == 0)
-                if (fact.label?.trim() == "사망" && fact.isRepeated == 0) {
-                    val jesaSolarCal = calculateSolarCal(thisYear, month, day, isLunar).apply {
-                        add(Calendar.DAY_OF_MONTH, -1)
-                    }
-                    val jDiffMillis = jesaSolarCal.timeInMillis - todayCal.timeInMillis
-                    val jDiffDays = (jDiffMillis / (1000 * 60 * 60 * 24)).toInt()
-
-                    if (jDiffDays == 0) {
-                        val title = "오늘의 제사 알림"
-                        val message = "오늘은 $personName 님의 제삿날입니다."
-                        NotificationHelper.sendNotification(applicationContext, (fact.id + 100000L).toInt(), title, message)
-                    } else if (jDiffDays == 1) {
-                        val title = "내일의 제사 알림"
-                        val message = "내일은 $personName 님의 제삿날입니다. 미리 준비해주세요."
-                        NotificationHelper.sendNotification(applicationContext, (fact.id + 150000L).toInt(), title, message)
-                    }
-                }
             }
 
             Result.success()

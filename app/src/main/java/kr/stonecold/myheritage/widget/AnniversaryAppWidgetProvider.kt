@@ -150,7 +150,7 @@ open class BaseAnniversaryAppWidgetProvider(
                 day = tempCal.get(Calendar.DAY_OF_MONTH)
             }
 
-            // [사망 자체 일정 후보 추가] (매년 반복(isRepeated==0)으로 지정된 경우에만 노출)
+            // [매년 반복(isRepeated==0)으로 지정된 일정 후보 추가]
             if (fact.isRepeated == 0) {
                 var candidateSolarCal = calculateSolarCal(thisYear, month, day, isLunar)
                 if (candidateSolarCal.timeInMillis < todayCal.timeInMillis) {
@@ -163,27 +163,6 @@ open class BaseAnniversaryAppWidgetProvider(
                     val d = candidateSolarCal.get(Calendar.DAY_OF_MONTH)
                     val solarDateText = "${m}월 ${d}일"
                     candidates.add(TempCandidate(fact, fact.label ?: "기념일", diffMillis, diffDays, solarDateText, month, day))
-                }
-            }
-
-            // [가상 제사 일정 후보 추가] (라벨이 "사망" 이고 매년 반복 지정된 경우에만 기일 하루 전날로 계산하여 위젯에 후보로 추가)
-            if (fact.label?.trim() == "사망" && fact.isRepeated == 0) {
-                var jesaSolarCal = calculateSolarCal(thisYear, month, day, isLunar)
-                jesaSolarCal.add(Calendar.DAY_OF_MONTH, -1) // 하루 전 감산
-                
-                // 이미 지난 경우 내년 기일의 하루 전으로 이월 계산
-                if (jesaSolarCal.timeInMillis < todayCal.timeInMillis) {
-                    jesaSolarCal = calculateSolarCal(thisYear + 1, month, day, isLunar)
-                    jesaSolarCal.add(Calendar.DAY_OF_MONTH, -1)
-                }
-
-                val jDiffMillis = jesaSolarCal.timeInMillis - todayCal.timeInMillis
-                if (jDiffMillis >= 0) {
-                    val jDiffDays = (jDiffMillis / (1000 * 60 * 60 * 24)).toInt()
-                    val jM = jesaSolarCal.get(Calendar.MONTH) + 1
-                    val jD = jesaSolarCal.get(Calendar.DAY_OF_MONTH)
-                    val jSolarDateText = "${jM}월 ${jD}일"
-                    candidates.add(TempCandidate(fact, "제사", jDiffMillis, jDiffDays, jSolarDateText, month, day))
                 }
             }
         }
@@ -212,11 +191,7 @@ open class BaseAnniversaryAppWidgetProvider(
         
         // 음력일 경우 원래 음력 월/일 정보 결합
         val pDateStr = if (pCandidate.fact.dateType == 1) {
-            if (pCandidate.virtualLabel == "제사") {
-                "${pCandidate.solarDateText} (기일: 음력 ${pCandidate.originMonth}/${pCandidate.originDay})"
-            } else {
-                "${pCandidate.solarDateText} (음력 ${pCandidate.originMonth}/${pCandidate.originDay})"
-            }
+            "${pCandidate.solarDateText} (음력 ${pCandidate.originMonth}/${pCandidate.originDay})"
         } else {
             pCandidate.solarDateText
         }
@@ -239,11 +214,7 @@ open class BaseAnniversaryAppWidgetProvider(
             
             // 음력일 경우 원래 음력 월/일 정보 결합
             val sDateStr = if (sCandidate.fact.dateType == 1) {
-                if (sCandidate.virtualLabel == "제사") {
-                    "${sCandidate.solarDateText} (기일: 음력 ${sCandidate.originMonth}/${sCandidate.originDay})"
-                } else {
-                    "${sCandidate.solarDateText} (음력 ${sCandidate.originMonth}/${sCandidate.originDay})"
-                }
+                "${sCandidate.solarDateText} (음력 ${sCandidate.originMonth}/${sCandidate.originDay})"
             } else {
                 sCandidate.solarDateText
             }
