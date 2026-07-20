@@ -66,9 +66,9 @@ fun SettingsScreen(
                 Toast.makeText(context, msg, Toast.LENGTH_LONG).show()
                 viewModel.resetState()
                 
-                // 복원 성공인 경우, 새로운 DB 데이터 반영을 위해 액티비티 즉각 재기동(Recreate) 리프레시 실행!
+                // 복원 성공인 경우, SQLite 네이티브 락 및 인메모리 캐시 완전 클리어를 위해 프로세스 자동 재부팅 실행!
                 if (msg.contains("복원")) {
-                    context.findActivity()?.recreate()
+                    restartAppProcess(context)
                 }
             }
             is SettingsUiState.Error -> {
@@ -326,14 +326,16 @@ fun SettingsScreen(
     }
 }
 
-// Context에서 ComponentActivity를 안전하게 꺼내기 위한 헬퍼 확장 함수
-fun android.content.Context.findActivity(): androidx.activity.ComponentActivity? {
-    var currentContext = this
-    while (currentContext is android.content.ContextWrapper) {
-        if (currentContext is androidx.activity.ComponentActivity) {
-            return currentContext
-        }
-        currentContext = currentContext.baseContext
+// 복원 성공 시 SQLite 네이티브 메모리 캐시 및 프로세스를 완전 초기화하여 100% 즉시 반영하는 자동 재부팅 헬퍼
+fun restartAppProcess(context: android.content.Context) {
+    try {
+        val packageManager = context.packageManager
+        val intent = packageManager.getLaunchIntentForPackage(context.packageName)
+        val componentName = intent?.component
+        val mainIntent = android.content.Intent.makeRestartActivityTask(componentName)
+        context.startActivity(mainIntent)
+        Runtime.getRuntime().exit(0)
+    } catch (e: Exception) {
+        e.printStackTrace()
     }
-    return null
 }
