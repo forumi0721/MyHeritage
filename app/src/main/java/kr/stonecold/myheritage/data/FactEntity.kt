@@ -26,7 +26,10 @@ data class FactEntity(
     val dateType: Int,
     
     @ColumnInfo(name = "is_repeated")
-    val isRepeated: Int, // 0: true, 1: false (기존 앱 매핑 유지)
+    val isRepeated: Int, // 0: true (매년반복), 1: false
+    
+    @ColumnInfo(name = "show_in_list", defaultValue = "1")
+    val showInList: Int = 1, // 1: 목록에 출력, 0: 목록 출력 안함
     
     @ColumnInfo(name = "place")
     val place: String?,

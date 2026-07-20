@@ -4,7 +4,7 @@ import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Done
 import androidx.compose.material3.*
@@ -40,9 +40,10 @@ fun EditFactScreen(
     var place by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
     var isRepeated by remember { mutableStateOf(1) } // 0: 매년반복, 1: 안함
+    var showInList by remember { mutableStateOf(1) } // 1: 출력함, 0: 출력 안함
     var type by remember { mutableStateOf(0) }
     var dateType by remember { mutableStateOf(0) } // 0: 양력, 1: 음력
-    
+
     var isLoading by remember { mutableStateOf(true) }
 
     LaunchedEffect(factId) {
@@ -54,9 +55,10 @@ fun EditFactScreen(
                 place = fact.place ?: ""
                 description = fact.description ?: ""
                 isRepeated = fact.isRepeated
+                showInList = fact.showInList
                 type = fact.type
                 dateType = fact.dateType
-                
+
                 // 날짜 파싱 (YYYYMMDD)
                 val dateVal = fact.startDate
                 if (dateVal in 10000000..99991231) {
@@ -84,7 +86,7 @@ fun EditFactScreen(
                 title = { Text(if (factId == -1L) "생애 이벤트 등록" else "이벤트 정보 수정") },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
-                        Icon(imageVector = Icons.Default.ArrowBack, contentDescription = "뒤로가기")
+                        Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "뒤로가기")
                     }
                 },
                 actions = {
@@ -230,7 +232,7 @@ fun EditFactScreen(
                         maxLines = 3
                     )
 
-                    // 매년 반복 여부 선택
+                    // 옵션 1: 매년 반복 여부 선택
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier.fillMaxWidth()
@@ -239,7 +241,19 @@ fun EditFactScreen(
                             checked = (isRepeated == 0),
                             onCheckedChange = { checked -> isRepeated = if (checked) 0 else 1 }
                         )
-                        Text("기념일 지정 (매년 기일/생일 알림에 반영)")
+                        Text("매년 반복 (기일/생일 알림에 반영)")
+                    }
+
+                    // 옵션 2: 기념일 목록 출력 여부 선택
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Checkbox(
+                            checked = (showInList == 1),
+                            onCheckedChange = { checked -> showInList = if (checked) 1 else 0 }
+                        )
+                        Text("기념일 목록에 출력")
                     }
 
                     Spacer(modifier = Modifier.weight(1f))
@@ -249,17 +263,17 @@ fun EditFactScreen(
                             val y = yearStr.toIntOrNull() ?: 0
                             val m = monthStr.toIntOrNull() ?: 0
                             val d = dayStr.toIntOrNull() ?: 0
-                            
+
                             if (label.isBlank()) {
                                 Toast.makeText(context, "구분 라벨을 입력해주세요.", Toast.LENGTH_SHORT).show()
                                 return@Button
                             }
-                            
+
                             if (y !in 1000..9999 || m !in 1..12 || d !in 1..31) {
                                 Toast.makeText(context, "유효한 날짜(년: 1000~9999, 월: 1~12, 일: 1~31)를 입력해주세요.", Toast.LENGTH_SHORT).show()
                                 return@Button
                             }
-                            
+
                             val dateCode = (y * 10000 + m * 100 + d).toLong()
 
                             coroutineScope.launch {
@@ -271,6 +285,7 @@ fun EditFactScreen(
                                     startDate = dateCode,
                                     dateType = dateType,
                                     isRepeated = isRepeated,
+                                    showInList = showInList,
                                     place = place.trim().ifEmpty { null },
                                     description = description.trim().ifEmpty { null },
                                     lastModified = System.currentTimeMillis()

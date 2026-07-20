@@ -32,7 +32,7 @@ class AnniversaryNotificationWorker(
             }
             val thisYear = todayCal.get(Calendar.YEAR)
 
-            val targetFacts = facts.filter { fact -> fact.isRepeated == 0 || fact.label?.trim() == "사망" }
+            val targetFacts = facts.filter { fact -> fact.isRepeated == 0 && fact.showInList == 1 }
 
             for (fact in targetFacts) {
                 val personId = if (fact.possessId.startsWith("IND_")) {

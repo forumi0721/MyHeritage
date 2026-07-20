@@ -4,6 +4,8 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 
 @Database(
     entities = [
@@ -13,7 +15,7 @@ import androidx.room.RoomDatabase
         NoteEntity::class,
         ResourceEntity::class
     ],
-    version = 3, // 기존 DB 버전이 3이었으므로 동일하게 3으로 매칭
+    version = 4,
     exportSchema = false
 )
 abstract class MyHeritageDatabase : RoomDatabase() {
@@ -28,6 +30,12 @@ abstract class MyHeritageDatabase : RoomDatabase() {
         @Volatile
         private var INSTANCE: MyHeritageDatabase? = null
 
+        val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE facts ADD COLUMN show_in_list INTEGER NOT NULL DEFAULT 1")
+            }
+        }
+
         fun getDatabase(context: Context): MyHeritageDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -35,7 +43,8 @@ abstract class MyHeritageDatabase : RoomDatabase() {
                     MyHeritageDatabase::class.java,
                     "myHeritage.db"
                 )
-                .fallbackToDestructiveMigrationOnDowngrade()
+                .addMigrations(MIGRATION_3_4)
+                .fallbackToDestructiveMigration(true)
                 .build()
                 INSTANCE = instance
                 instance

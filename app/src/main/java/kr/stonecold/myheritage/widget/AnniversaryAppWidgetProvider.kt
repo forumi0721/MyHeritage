@@ -99,8 +99,8 @@ open class BaseAnniversaryAppWidgetProvider(
         facts: List<FactEntity>,
         indMap: Map<Long, IndividualEntity>
     ): WidgetResult {
-        // 반복일정(isRepeated == 0) 이거나 라벨이 "사망"인 것 수집
-        val targetFacts = facts.filter { fact -> fact.isRepeated == 0 || fact.label?.trim() == "사망" }
+        // 매년 반복일정(isRepeated == 0) 이며 목록 출력(showInList == 1)이 켜진 항목 수집
+        val targetFacts = facts.filter { fact -> fact.isRepeated == 0 && fact.showInList == 1 }
 
         if (targetFacts.isEmpty()) {
             return WidgetResult(

@@ -34,6 +34,7 @@ fun AnniversaryListScreen(
 
     val factsState by viewModel.uiState.collectAsStateWithLifecycle()
     val sortOrder by viewModel.sortOrder.collectAsStateWithLifecycle()
+    val showAllFacts by viewModel.showAllFacts.collectAsStateWithLifecycle()
     var showSortMenu by remember { mutableStateOf(false) }
 
     Scaffold(
@@ -85,7 +86,7 @@ fun AnniversaryListScreen(
             color = MaterialTheme.colorScheme.background
         ) {
             Column(modifier = Modifier.fillMaxSize()) {
-                // 현재 정렬 상태 배너/칩
+                // 현재 정렬 및 출력 필터 스위치 배너
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -93,22 +94,30 @@ fun AnniversaryListScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        text = "정렬: ${sortOrder.label}",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                    Text(
-                        text = "총 ${factsState.size}개",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.outline
+                    Column {
+                        Text(
+                            text = "정렬: ${sortOrder.label}",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        Text(
+                            text = "총 ${factsState.size}개 목록",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.outline
+                        )
+                    }
+
+                    FilterChip(
+                        selected = showAllFacts,
+                        onClick = { viewModel.setShowAllFacts(!showAllFacts) },
+                        label = { Text(if (showAllFacts) "전체 출력 중" else "목록출력 켜짐만") }
                     )
                 }
 
                 if (factsState.isEmpty()) {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text("등록된 기념일이 없습니다. 인물 상세 페이지에서 추가해주세요.")
+                        Text(if (showAllFacts) "등록된 기념일이 없습니다." else "출력 지정된 기념일이 없습니다. 오른쪽 위 칩을 눌러 전체 목록을 확인해보세요.")
                     }
                 } else {
                     LazyColumn(
@@ -128,55 +137,53 @@ fun AnniversaryListScreen(
                                         horizontalArrangement = Arrangement.SpaceBetween,
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
-                                        Text(
-                                            text = fact.label,
-                                            fontWeight = FontWeight.Bold,
-                                            fontSize = 18.sp,
-                                            color = MaterialTheme.colorScheme.primary
-                                        )
-                                        Row(
-                                            horizontalArrangement = Arrangement.spacedBy(6.dp),
-                                            verticalAlignment = Alignment.CenterVertically
-                                        ) {
-                                            Surface(
-                                                color = MaterialTheme.colorScheme.secondaryContainer,
-                                                shape = MaterialTheme.shapes.small
-                                            ) {
-                                                Text(
-                                                    text = "대상자: ${fact.personName}",
-                                                    style = MaterialTheme.typography.bodyMedium,
-                                                    fontWeight = FontWeight.SemiBold,
-                                                    color = MaterialTheme.colorScheme.onSecondaryContainer,
-                                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                                                )
-                                            }
-                                            if (fact.isRepeated == 0) {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Text(
+                                                text = fact.label,
+                                                fontWeight = FontWeight.Bold,
+                                                fontSize = 18.sp,
+                                                color = MaterialTheme.colorScheme.primary
+                                            )
+                                            if (fact.showInList == 0) {
+                                                Spacer(modifier = Modifier.width(6.dp))
                                                 Surface(
-                                                    color = MaterialTheme.colorScheme.primaryContainer,
-                                                    shape = MaterialTheme.shapes.small
+                                                    color = MaterialTheme.colorScheme.errorContainer,
+                                                    shape = MaterialTheme.shapes.extraSmall
                                                 ) {
                                                     Text(
-                                                        text = "매년 반복",
-                                                        style = MaterialTheme.typography.bodySmall,
-                                                        fontWeight = FontWeight.Bold,
-                                                        color = MaterialTheme.colorScheme.onPrimaryContainer,
-                                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp)
+                                                        text = "목록 미출력",
+                                                        fontSize = 10.sp,
+                                                        color = MaterialTheme.colorScheme.onErrorContainer,
+                                                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
                                                     )
                                                 }
                                             }
                                         }
+
+                                        Surface(
+                                            color = MaterialTheme.colorScheme.secondaryContainer,
+                                            shape = MaterialTheme.shapes.small
+                                        ) {
+                                            Text(
+                                                text = "대상자: ${fact.personName}",
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                fontWeight = FontWeight.SemiBold,
+                                                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                            )
+                                        }
                                     }
+
                                     Spacer(modifier = Modifier.height(8.dp))
-                                    val calendarTypeStr = if (fact.dateType == 1) " (음력)" else " (양력)"
                                     Text(
-                                        text = "원래 날짜: ${fact.originalDateStr}$calendarTypeStr",
+                                        text = "원래 등록 날짜: ${fact.originalDateStr}${if (fact.dateType == 1) " (음력)" else " (양력)"}",
                                         style = MaterialTheme.typography.bodyMedium
                                     )
-                                    Spacer(modifier = Modifier.height(2.dp))
                                     Text(
-                                        text = "올해 양력: ${fact.thisYearSolarDateStr}",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        text = "올해 환산 날짜: ${fact.thisYearSolarDateStr} (양력)",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.primary,
+                                        fontWeight = FontWeight.SemiBold
                                     )
                                 }
                             }

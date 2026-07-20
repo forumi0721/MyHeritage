@@ -27,6 +27,7 @@ data class AnniversaryUiItem(
     val possessId: String,
     val dateType: Int,
     val isRepeated: Int,
+    val showInList: Int = 1,
     val originalDateVal: Long = 0L,
     val thisYearSolarMonthDay: Int = 0,
     val upcomingDiffMillis: Long = 0L
@@ -39,15 +40,23 @@ class AnniversaryListViewModel(
     private val _sortOrder = MutableStateFlow(AnniversarySortOrder.ORIGINAL_ASC)
     val sortOrder: StateFlow<AnniversarySortOrder> = _sortOrder.asStateFlow()
 
+    private val _showAllFacts = MutableStateFlow(false) // false: 출력 옵션 켜진 것만, true: 전체 출력
+    val showAllFacts: StateFlow<Boolean> = _showAllFacts.asStateFlow()
+
     fun setSortOrder(order: AnniversarySortOrder) {
         _sortOrder.value = order
+    }
+
+    fun setShowAllFacts(showAll: Boolean) {
+        _showAllFacts.value = showAll
     }
 
     val uiState: StateFlow<List<AnniversaryUiItem>> = combine(
         repository.getAllFactsFlow(),
         repository.getAllIndividuals(),
-        _sortOrder
-    ) { facts, individuals, order ->
+        _sortOrder,
+        _showAllFacts
+    ) { facts, individuals, order, showAll ->
         val indMap = individuals.associateBy { it.id }
         val resultList = mutableListOf<AnniversaryUiItem>()
 
@@ -59,7 +68,10 @@ class AnniversaryListViewModel(
         }
         val thisYear = todayCal.get(Calendar.YEAR)
 
-        facts.forEach { fact ->
+        // showAll 이 false 면 showInList == 1 인 팩트만 필터링!
+        val filteredFacts = facts.filter { fact -> showAll || fact.showInList == 1 }
+
+        filteredFacts.forEach { fact ->
             val personId = if (fact.possessId.startsWith("IND_")) {
                 fact.possessId.substring(4).toLongOrNull() ?: -1L
             } else -1L
@@ -71,7 +83,7 @@ class AnniversaryListViewModel(
             val dateVal = fact.startDate
             val originalDateStr = formatLongDate(dateVal)
 
-            // 1. 메인 기념일 계산용 캘린더 구성
+            // 메인 기념일 계산용 캘린더 구성
             val targetCal: Calendar
             val month: Int
             val day: Int
@@ -109,6 +121,7 @@ class AnniversaryListViewModel(
                 possessId = fact.possessId,
                 dateType = fact.dateType,
                 isRepeated = fact.isRepeated,
+                showInList = fact.showInList,
                 originalDateVal = dateVal,
                 thisYearSolarMonthDay = monthDayVal,
                 upcomingDiffMillis = diffMillis
@@ -125,19 +138,15 @@ class AnniversaryListViewModel(
             AnniversarySortOrder.THIS_YEAR_SOLAR_ASC -> resultList.sortedBy { it.thisYearSolarMonthDay }
             AnniversarySortOrder.THIS_YEAR_SOLAR_DESC -> resultList.sortedByDescending { it.thisYearSolarMonthDay }
         }
-    }
-    .stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5000),
-        initialValue = emptyList()
-    )
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     private fun getSolarCalOfThisYear(thisYear: Int, month: Int, day: Int, isLunar: Boolean): Calendar {
-        val cal = Calendar.getInstance()
-        cal.set(Calendar.HOUR_OF_DAY, 0)
-        cal.set(Calendar.MINUTE, 0)
-        cal.set(Calendar.SECOND, 0)
-        cal.set(Calendar.MILLISECOND, 0)
+        val cal = Calendar.getInstance().apply {
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }
 
         if (isLunar) {
             val cc = ChineseCalendar()
