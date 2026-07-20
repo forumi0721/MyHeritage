@@ -5,7 +5,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Done
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -65,7 +65,7 @@ fun EditFamilyScreen(
                 title = { Text(if (familyId == -1L) "가족 등록" else "가족 정보 수정") },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
-                        Icon(imageVector = Icons.Default.ArrowBack, contentDescription = "뒤로가기")
+                        Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "뒤로가기")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -141,8 +141,9 @@ fun EditFamilyScreen(
                                 }
                             )
                             individuals.filter { it.gender == 1 }.forEach { person ->
+                                val aliasText = if (!person.alias.isNullOrBlank()) " (${person.alias})" else ""
                                 DropdownMenuItem(
-                                    text = { Text("${person.name} (${person.alias ?: "별칭없음"})") },
+                                    text = { Text("${person.name}$aliasText") },
                                     onClick = {
                                         husbandId = person.id
                                         showHusbandMenu = false
@@ -175,8 +176,9 @@ fun EditFamilyScreen(
                                 }
                             )
                             individuals.filter { it.gender == 2 }.forEach { person ->
+                                val aliasText = if (!person.alias.isNullOrBlank()) " (${person.alias})" else ""
                                 DropdownMenuItem(
-                                    text = { Text("${person.name} (${person.alias ?: "별칭없음"})") },
+                                    text = { Text("${person.name}$aliasText") },
                                     onClick = {
                                         wifeId = person.id
                                         showWifeMenu = false
@@ -212,8 +214,9 @@ fun EditFamilyScreen(
                                 }
                             )
                             individuals.forEach { person ->
+                                val aliasText = if (!person.alias.isNullOrBlank()) " (${person.alias})" else ""
                                 DropdownMenuItem(
-                                    text = { Text("${person.name} (${person.alias ?: "별칭없음"})") },
+                                    text = { Text("${person.name}$aliasText") },
                                     onClick = {
                                         relativeId = person.id
                                         showRelativeMenu = false

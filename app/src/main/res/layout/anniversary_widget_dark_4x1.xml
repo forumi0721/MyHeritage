@@ -5,24 +5,25 @@
     android:background="@drawable/anniversary_widget_dark_background"
     android:orientation="horizontal"
     android:gravity="center_vertical"
-    android:padding="6dp">
+    android:padding="8dp">
 
-    <!-- [1st] 첫 번째 기념일 영역 (크게) -->
+    <!-- [1st] 첫 번째 기념일 영역 (메인 - 크게) -->
     <LinearLayout
         android:layout_width="0dp"
         android:layout_height="match_parent"
-        android:layout_weight="1.6"
+        android:layout_weight="1.65"
         android:orientation="horizontal"
         android:gravity="center_vertical">
 
         <!-- D-Day 뱃지 -->
         <LinearLayout
-            android:layout_width="52dp"
+            android:layout_width="54dp"
             android:layout_height="match_parent"
-            android:background="@drawable/anniversary_widget_dark_badge_bg"
+            android:background="@drawable/widget_dday_badge_dark_bg"
             android:gravity="center"
             android:orientation="vertical"
-            android:layout_marginEnd="6dp">
+            android:padding="4dp"
+            android:layout_marginEnd="8dp">
 
             <TextView
                 android:id="@+id/widget_dday"
@@ -46,9 +47,9 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="가장 가까운 기념일"
-                android:textColor="#E0E0E0"
+                android:textColor="#E8EAF6"
                 android:textStyle="bold"
-                android:textSize="12sp"
+                android:textSize="13sp"
                 android:singleLine="true"
                 android:ellipsize="end" />
 
@@ -57,9 +58,9 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="로딩 중..."
-                android:textColor="#B0BEC5"
-                android:textSize="10sp"
-                android:layout_marginTop="1dp"
+                android:textColor="#9FA8DA"
+                android:textSize="11sp"
+                android:layout_marginTop="2dp"
                 android:singleLine="true"
                 android:ellipsize="end" />
         </LinearLayout>
@@ -69,19 +70,19 @@
     <View
         android:layout_width="1dp"
         android:layout_height="match_parent"
-        android:background="#455A64"
-        android:layout_marginTop="4dp"
-        android:layout_marginBottom="4dp"
+        android:background="#263238"
+        android:layout_marginTop="6dp"
+        android:layout_marginBottom="6dp"
         android:layout_marginStart="4dp"
-        android:layout_marginEnd="6dp" />
+        android:layout_marginEnd="8dp" />
 
-    <!-- [2nd] 두 번째 기념일 영역 (그 다음 - 작게) -->
+    <!-- [2nd] 두 번째 기념일 영역 (그 다음 - 서브) -->
     <LinearLayout
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_weight="1.0"
         android:orientation="vertical"
-        android:gravity="start">
+        android:gravity="center_vertical">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -96,18 +97,18 @@
                 android:text="[D-일]"
                 android:textColor="#FFB74D"
                 android:textStyle="bold"
-                android:textSize="10sp"
-                android:layout_marginEnd="4dp" />
+                android:textSize="11sp"
+                android:singleLine="true" />
 
             <TextView
                 android:id="@+id/widget_next_title"
-                android:layout_width="0dp"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="그 다음 기념일"
-                android:textColor="#CFD8DC"
+                android:text=" 다음 일정"
+                android:textColor="#ECEFF1"
                 android:textStyle="bold"
-                android:textSize="10sp"
+                android:textSize="11sp"
+                android:layout_marginStart="2dp"
                 android:singleLine="true"
                 android:ellipsize="end" />
         </LinearLayout>
@@ -116,12 +117,11 @@
             android:id="@+id/widget_next_date"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="대기 일정 없음"
+            android:text="날짜"
             android:textColor="#90A4AE"
-            android:textSize="9sp"
-            android:layout_marginTop="1dp"
+            android:textSize="10sp"
+            android:layout_marginTop="2dp"
             android:singleLine="true"
             android:ellipsize="end" />
     </LinearLayout>
-
 </LinearLayout>
