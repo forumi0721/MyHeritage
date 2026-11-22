@@ -22,7 +22,7 @@
 
 ## 🛠 사용된 기술
 
-- **UI / Framework:** Jetpack Compose, Material Design 3, Navigation3 (Single Activity Architecture)
+- **UI / Framework:** Jetpack Compose, Material Design 3, Navigation3 (Single Activity Architecture). Navigation3의 lifecycle 연동을 위해 AndroidX Lifecycle 관련 라이브러리는 2.11.1로 맞춥니다.
 - **Architecture:** MVVM (Model-View-ViewModel), Coroutines, Flow, StateIn
 - **Database:** Room Database (SQLite Engine, Write-Ahead Logging & Full Checkpoint Sync)
 - **Background & Widget:** WorkManager (PeriodicWorkRequest), AppWidgetProvider (RemoteViews, Live Broadcast Update)
@@ -31,6 +31,8 @@
 ---
 
 ## 🚀 설치 및 실행 방법
+
+* Android 13(API 33) 이상이 필요합니다.
 
 1. 저장소에서 프로젝트를 클론합니다.
 ```bash

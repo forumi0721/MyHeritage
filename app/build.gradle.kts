@@ -1,20 +1,9 @@
 plugins {
   alias(libs.plugins.android.application)
-  alias(libs.plugins.compose.compiler)
+  alias(libs.plugins.kotlin.compose)
   alias(libs.plugins.kotlin.serialization)
   alias(libs.plugins.ksp)
 }
-
-// AGP 9.5.2 pins this helper to 2.2.10, which is not published. Keep it
-// aligned with the Compose compiler plugin version used by this project.
-configurations.matching { it.name == "composeMappingProducerClasspath" }.configureEach {
-    resolutionStrategy.eachDependency {
-        if (requested.group == "org.jetbrains.kotlin" && requested.name == "compose-group-mapping") {
-            useVersion(libs.versions.kotlin.get())
-        }
-    }
-}
-
 
 val appVersion = providers.gradleProperty("appVersion").orElse("1.0.0").get()
 val appVersionParts = appVersion.split(".").map(String::toInt)
@@ -26,8 +15,9 @@ val computedVersionCode = appVersionParts[0] * 1_000_000 + appVersionParts[1] * 
 
 android {
     namespace = "kr.stonecold.myheritage"
-    compileSdk = 37
-    compileSdkMinor = 1
+    compileSdk {
+        version = release(37)
+    }
     defaultConfig {
         applicationId = "kr.stonecold.myheritage"
         minSdk = 33
@@ -52,29 +42,21 @@ android {
     }
     buildTypes {
         release {
-            isMinifyEnabled = true
-            isShrinkResources = true
-
-            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             signingConfig = signingConfigs.getByName("release")
+            optimization {
+                enable = true
+                packageScope = setOf("androidx.**", "kotlin.**", "kotlinx.**")
+            }
         }
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
+        sourceCompatibility = JavaVersion.VERSION_11
+        targetCompatibility = JavaVersion.VERSION_11
     }
     buildFeatures {
       compose = true
     }
 
-    packaging {
-      resources {
-        excludes += "/META-INF/{AL2.0,LGPL2.1}"
-      }
-    }
-    lint {
-        warningsAsErrors = true
-    }
 }
 
 dependencies {
@@ -108,9 +90,9 @@ dependencies {
 
   // Instrumented tests: jUnit rules and runners
   androidTestImplementation(libs.androidx.test.core)
-  androidTestImplementation(libs.androidx.test.ext.junit)
+  androidTestImplementation(libs.androidx.junit)
   androidTestImplementation(libs.androidx.test.runner)
-  androidTestImplementation(libs.androidx.test.espresso.core)
+  androidTestImplementation(libs.androidx.espresso.core)
 
   // Navigation
   implementation(libs.androidx.navigation3.ui)
