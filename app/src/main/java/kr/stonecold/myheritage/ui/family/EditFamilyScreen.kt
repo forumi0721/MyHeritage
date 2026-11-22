@@ -32,11 +32,11 @@ fun EditFamilyScreen(
     val repository = app.repository
     val coroutineScope = rememberCoroutineScope()
 
-    var husbandId by remember { mutableStateOf(-1L) }
-    var wifeId by remember { mutableStateOf(-1L) }
-    var fStatus by remember { mutableStateOf(0) }
-    var fKind by remember { mutableStateOf(0) }
-    var relativeId by remember { mutableStateOf(-1L) }
+    var husbandId by remember { mutableLongStateOf(-1L) }
+    var wifeId by remember { mutableLongStateOf(-1L) }
+    var fStatus by remember { mutableIntStateOf(0) }
+    var fKind by remember { mutableIntStateOf(0) }
+    var relativeId by remember { mutableLongStateOf(-1L) }
     
     var individuals by remember { mutableStateOf<List<IndividualEntity>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }

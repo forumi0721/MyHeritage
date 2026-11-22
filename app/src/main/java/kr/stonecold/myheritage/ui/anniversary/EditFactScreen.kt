@@ -39,10 +39,10 @@ fun EditFactScreen(
     var dayStr by remember { mutableStateOf("") }
     var place by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
-    var isRepeated by remember { mutableStateOf(1) } // 0: 매년반복, 1: 안함
-    var showInList by remember { mutableStateOf(1) } // 1: 출력함, 0: 출력 안함
-    var type by remember { mutableStateOf(0) }
-    var dateType by remember { mutableStateOf(0) } // 0: 양력, 1: 음력
+    var isRepeated by remember { mutableIntStateOf(1) } // 0: 매년반복, 1: 안함
+    var showInList by remember { mutableIntStateOf(1) } // 1: 출력함, 0: 출력 안함
+    var type by remember { mutableIntStateOf(0) }
+    var dateType by remember { mutableIntStateOf(0) } // 0: 양력, 1: 음력
 
     var isLoading by remember { mutableStateOf(true) }
 

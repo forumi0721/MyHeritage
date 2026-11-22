@@ -113,11 +113,11 @@ fun EditForm(
 ) {
     var name by remember { mutableStateOf(data.name) }
     var alias by remember { mutableStateOf(data.alias) }
-    var gender by remember { mutableStateOf(data.gender) } // 1: 남성, 2: 여성
+    var gender by remember { mutableIntStateOf(data.gender) } // 1: 남성, 2: 여성
 
     // 관계 설정 필드
-    var relativeId by remember { mutableStateOf(data.relativeId) }
-    var relation by remember { mutableStateOf(data.relation) }
+    var relativeId by remember { mutableLongStateOf(data.relativeId) }
+    var relation by remember { mutableIntStateOf(data.relation) }
 
     var showRelativeMenu by remember { mutableStateOf(false) }
     var showRelationMenu by remember { mutableStateOf(false) }

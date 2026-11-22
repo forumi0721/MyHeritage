@@ -41,7 +41,7 @@ fun EditResourceScreen(
     var label by remember { mutableStateOf("") }
     var uri by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
-    var rType by remember { mutableStateOf(0) } // 0: 이미지, 1: 오디오, 2: 비디오 등
+    var rType by remember { mutableIntStateOf(0) } // 0: 이미지, 1: 오디오, 2: 비디오 등
 
     var isLoading by remember { mutableStateOf(true) }
 

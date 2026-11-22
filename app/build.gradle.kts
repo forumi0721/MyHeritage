@@ -16,7 +16,9 @@ val computedVersionCode = appVersionParts[0] * 1_000_000 + appVersionParts[1] * 
 android {
     namespace = "kr.stonecold.myheritage"
     compileSdk {
-        version = release(37)
+        version = release(37) {
+            minorApiLevel = 1
+        }
     }
     defaultConfig {
         applicationId = "kr.stonecold.myheritage"

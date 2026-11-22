@@ -137,7 +137,7 @@ fun SettingsScreen(
                             Spacer(modifier = Modifier.height(12.dp))
                             
                             val prefs = remember { context.getSharedPreferences("my_heritage_prefs", Context.MODE_PRIVATE) }
-                            var selectedTheme by remember { mutableStateOf(prefs.getInt("pref_theme_mode", 0)) }
+                            var selectedTheme by remember { mutableIntStateOf(prefs.getInt("pref_theme_mode", 0)) }
                             
                             Row(
                                 horizontalArrangement = Arrangement.spacedBy(16.dp),

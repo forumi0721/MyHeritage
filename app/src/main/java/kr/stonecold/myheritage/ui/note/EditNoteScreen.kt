@@ -32,9 +32,9 @@ fun EditNoteScreen(
 
     var label by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
-    var kind by remember { mutableStateOf(0) }
-    var isPrivate by remember { mutableStateOf(0) } // 0: true, 1: false
-    var type by remember { mutableStateOf(0) }
+    var kind by remember { mutableIntStateOf(0) }
+    var isPrivate by remember { mutableIntStateOf(0) } // 0: true, 1: false
+    var type by remember { mutableIntStateOf(0) }
     
     var isLoading by remember { mutableStateOf(true) }
 
