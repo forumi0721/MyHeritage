@@ -18,6 +18,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.edit
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kr.stonecold.myheritage.MyHeritageApplication
@@ -146,7 +147,7 @@ fun SettingsScreen(
                                     RadioButton(
                                         selected = (selectedTheme == 0),
                                         onClick = {
-                                            prefs.edit().putInt("pref_theme_mode", 0).apply()
+                                            prefs.edit { putInt("pref_theme_mode", 0) }
                                             selectedTheme = 0
                                         }
                                     )
@@ -156,7 +157,7 @@ fun SettingsScreen(
                                     RadioButton(
                                         selected = (selectedTheme == 1),
                                         onClick = {
-                                            prefs.edit().putInt("pref_theme_mode", 1).apply()
+                                            prefs.edit { putInt("pref_theme_mode", 1) }
                                             selectedTheme = 1
                                         }
                                     )
@@ -166,7 +167,7 @@ fun SettingsScreen(
                                     RadioButton(
                                         selected = (selectedTheme == 2),
                                         onClick = {
-                                            prefs.edit().putInt("pref_theme_mode", 2).apply()
+                                            prefs.edit { putInt("pref_theme_mode", 2) }
                                             selectedTheme = 2
                                         }
                                     )

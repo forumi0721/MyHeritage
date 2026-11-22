@@ -4,6 +4,7 @@
     android:layout_height="match_parent"
     android:background="@drawable/anniversary_widget_dark_background"
     android:orientation="horizontal"
+    android:baselineAligned="false"
     android:gravity="center_vertical"
     android:padding="8dp">
 
@@ -13,6 +14,7 @@
         android:layout_height="match_parent"
         android:layout_weight="1.65"
         android:orientation="horizontal"
+            android:baselineAligned="false"
         android:gravity="center_vertical">
 
         <!-- D-Day 뱃지 -->
@@ -29,7 +31,7 @@
                 android:id="@+id/widget_dday"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="D-Day"
+                android:text="@string/widget_dday_badge"
                 android:textColor="#FF8A80"
                 android:textStyle="bold"
                 android:textSize="13sp" />
@@ -37,16 +39,15 @@
 
         <!-- 정보 텍스트 -->
         <LinearLayout
-            android:layout_width="0dp"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
             android:orientation="vertical">
 
             <TextView
                 android:id="@+id/widget_title"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="가장 가까운 기념일"
+                android:text="@string/widget_nearest_anniversary"
                 android:textColor="#E8EAF6"
                 android:textStyle="bold"
                 android:textSize="13sp"
@@ -57,7 +58,7 @@
                 android:id="@+id/widget_date"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="로딩 중..."
+                android:text="@string/widget_loading"
                 android:textColor="#9FA8DA"
                 android:textSize="11sp"
                 android:layout_marginTop="2dp"
@@ -94,7 +95,7 @@
                 android:id="@+id/widget_next_dday"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="[D-일]"
+                android:text="@string/widget_dday_placeholder"
                 android:textColor="#FFB74D"
                 android:textStyle="bold"
                 android:textSize="11sp"
@@ -104,7 +105,7 @@
                 android:id="@+id/widget_next_title"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text=" 다음 일정"
+                android:text="@string/widget_next_schedule_suffix"
                 android:textColor="#ECEFF1"
                 android:textStyle="bold"
                 android:textSize="11sp"
@@ -117,9 +118,9 @@
             android:id="@+id/widget_next_date"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="날짜"
+            android:text="@string/widget_date_label"
             android:textColor="#90A4AE"
-            android:textSize="10sp"
+            android:textSize="11sp"
             android:layout_marginTop="2dp"
             android:singleLine="true"
             android:ellipsize="end" />

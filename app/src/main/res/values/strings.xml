@@ -1,3 +1,10 @@
 <resources>
     <string name="app_name">My Heritage</string>
+
+    <string name="widget_dday_badge">D-Day</string>
+    <string name="widget_nearest_anniversary">가장 가까운 기념일</string>
+    <string name="widget_loading">로딩 중…</string>
+    <string name="widget_dday_placeholder">[D-일]</string>
+    <string name="widget_next_schedule_suffix"> 다음 일정</string>
+    <string name="widget_date_label">날짜</string>
 </resources>

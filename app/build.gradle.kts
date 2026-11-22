@@ -5,31 +5,58 @@ plugins {
   alias(libs.plugins.ksp)
 }
 
+// AGP 9.5.2 pins this helper to 2.2.10, which is not published. Keep it
+// aligned with the Compose compiler plugin version used by this project.
+configurations.matching { it.name == "composeMappingProducerClasspath" }.configureEach {
+    resolutionStrategy.eachDependency {
+        if (requested.group == "org.jetbrains.kotlin" && requested.name == "compose-group-mapping") {
+            useVersion(libs.versions.kotlin.get())
+        }
+    }
+}
+
+
+val appVersion = providers.gradleProperty("appVersion").orElse("1.0.0").get()
+val appVersionParts = appVersion.split(".").map(String::toInt)
+require(appVersionParts.size == 3 && appVersionParts.all { it in 0..999 }) {
+    "appVersion must use MAJOR.MINOR.PATCH with each part between 0 and 999"
+}
+val computedVersionCode = appVersionParts[0] * 1_000_000 + appVersionParts[1] * 1_000 + appVersionParts[2]
+
+
 android {
     namespace = "kr.stonecold.myheritage"
-    compileSdk = 36
+    compileSdk = 37
+    compileSdkMinor = 1
     defaultConfig {
         applicationId = "kr.stonecold.myheritage"
-        minSdk = 24
-        targetSdk = 36
-        versionCode = 1
-        versionName = "1.0"
+        minSdk = 33
+        targetSdk = 37
+        versionCode = computedVersionCode
+        versionName = appVersion
+
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     signingConfigs {
         create("release") {
-            storeFile = File(projectDir, "release-keystore.jks")
-            storePassword = System.getenv("storePassword")
-            keyAlias = System.getenv("keyAlias")
-            keyPassword = System.getenv("keyPassword")
+            val releaseStore = providers.gradleProperty("keystoreFile")
+                .map(::File)
+                .orElse(File(projectDir, "release-keystore.jks"))
+                .get()
+            storeFile = releaseStore
+            storePassword = System.getenv("KEY_STORE_PASSWORD")
+            keyAlias = System.getenv("KEY_ALIAS")
+            keyPassword = System.getenv("KEY_PASSWORD")
         }
     }
     buildTypes {
         release {
             isMinifyEnabled = true
             isShrinkResources = true
-            signingConfig = signingConfigs.getByName("release")
+
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            signingConfig = signingConfigs.getByName("release")
         }
     }
     compileOptions {
@@ -38,9 +65,6 @@ android {
     }
     buildFeatures {
       compose = true
-      aidl = false
-      buildConfig = false
-      shaders = false
     }
 
     packaging {
@@ -48,10 +72,9 @@ android {
         excludes += "/META-INF/{AL2.0,LGPL2.1}"
       }
     }
-}
-
-kotlin {
-    jvmToolchain(17)
+    lint {
+        warningsAsErrors = true
+    }
 }
 
 dependencies {
@@ -72,7 +95,7 @@ dependencies {
   implementation(libs.androidx.compose.ui)
   implementation(libs.androidx.compose.ui.tooling.preview)
   implementation(libs.androidx.compose.material3)
-  implementation("androidx.compose.material:material-icons-extended")
+  implementation(libs.androidx.compose.material.icons.extended)
   // Tooling
   debugImplementation(libs.androidx.compose.ui.tooling)
   // Instrumented tests
@@ -100,5 +123,5 @@ dependencies {
   ksp(libs.androidx.room.compiler)
 
   // WorkManager (Background Notification Scheduler)
-  implementation("androidx.work:work-runtime-ktx:2.10.0")
+  implementation(libs.androidx.work.runtime.ktx)
 }
