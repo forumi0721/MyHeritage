@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.sp
 import androidx.core.content.edit
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import kr.stonecold.myheritage.AppUpdateCard
 import kr.stonecold.myheritage.MyHeritageApplication
 
 @Composable
@@ -254,6 +255,8 @@ fun SettingsScreen(
                             }
                         }
                     }
+
+                    AppUpdateCard(autoCheck = false)
                 }
             }
         }
